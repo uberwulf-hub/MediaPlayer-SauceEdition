@@ -48,6 +48,9 @@ namespace MediaPlayerSauce.Core
         public bool WinMax;
         public bool ImportedOld;                 // App Hub's Media Player settings were brought across once
         public double UiScale = 1.0;
+        public bool Normalize;                   // even out loud and quiet parts
+        public string Visual = "";               // music visualisation: "", spectrum, scope, vuMeter, goom, visual
+        public bool HardwareDecoding = true;
 
         /// <summary>Fields this version doesn't know (a newer version wrote them): written back unchanged.</summary>
         public JsonObject Extra = new JsonObject();
@@ -64,7 +67,7 @@ namespace MediaPlayerSauce.Core
         }
 
         static readonly string[] Known = { "version", "volume", "muted", "recent", "positions", "lastFolder", "ytRecent", "showPlaylist", "loop", "shuffle",
-            "subtitleScale", "audioDevice", "resume", "onTop", "pauseOnMinimize", "eq", "window", "importedOld", "uiScale" };
+            "subtitleScale", "audioDevice", "resume", "onTop", "pauseOnMinimize", "eq", "window", "importedOld", "uiScale", "normalize", "visual", "hardwareDecoding" };
 
         public static Settings Load(string file)
         {
@@ -132,6 +135,9 @@ namespace MediaPlayerSauce.Core
             }
             ImportedOld = Bool(o, "importedOld", false);
             UiScale = Math.Clamp(Dbl(o, "uiScale", 1.0), 0.75, 2.0);
+            Normalize = Bool(o, "normalize", false);
+            Visual = Str(o, "visual", "") switch { "spectrum" => "spectrum", "scope" => "scope", "vuMeter" => "vuMeter", "goom" => "goom", "visual" => "visual", _ => "" };
+            HardwareDecoding = Bool(o, "hardwareDecoding", true);
             foreach (var kv in o)
                 if (Array.IndexOf(Known, kv.Key) < 0) Extra[kv.Key] = kv.Value?.DeepClone();
         }
@@ -166,6 +172,9 @@ namespace MediaPlayerSauce.Core
             o["window"] = win;
             o["importedOld"] = ImportedOld;
             o["uiScale"] = UiScale;
+            o["normalize"] = Normalize;
+            o["visual"] = Visual;
+            o["hardwareDecoding"] = HardwareDecoding;
             foreach (var kv in Extra) if (!o.ContainsKey(kv.Key)) o[kv.Key] = kv.Value?.DeepClone();
             return o;
         }
