@@ -4,6 +4,8 @@ What changes in each version, in plain words. Newest first.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-08
+
 ### Added
 
 - Opening one song or video brings the others in its folder into the playlist, so Next and Previous go through the folder (Preferences can turn this off).
