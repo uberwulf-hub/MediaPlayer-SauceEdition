@@ -28,6 +28,7 @@ namespace MediaPlayerSE.Tests
                 ("ui", UiChecks),
                 ("discs", DiscChecks),
                 ("openwith", OpenWithChecks),
+                ("online", OnlineChecks),
             };
             var sw = Stopwatch.StartNew();
             foreach (var g in groups)

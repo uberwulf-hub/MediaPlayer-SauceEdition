@@ -56,6 +56,14 @@ namespace MediaPlayerSE.Tests
 
             var w = NewWindow(settingsFile);
             Check("ui: the window opens with the start page", w.Welcome.Visibility == Visibility.Visible && w.Playlist.Count == 0);
+            var bad = new List<string>();
+            foreach (var dict in app.Resources.MergedDictionaries)
+                foreach (var key in dict.Keys) { try { app.FindResource(key); } catch (Exception ex) { bad.Add(key + ": " + ex.GetBaseException().Message); } }
+            Check("ui: every style and colour of the theme loads", bad.Count == 0, string.Join("; ", bad));
+            string dialogError = null;
+            try { new InputBox(w, "t", "p", "", "", "OK", null); MediaPlayerSauce.UI.ToolUi.Dialog(w, "t", 400); }
+            catch (Exception ex) { dialogError = ex.GetBaseException().Message; }
+            Check("ui: dialogs can be made with the theme's dialog style", dialogError == null, dialogError);
             w.OpenPaths(new[] { avi, wav, Path.Combine(d, "nothing-here.txt") });
             Check("ui: files go into the playlist and the first one plays", w.Playlist.Count == 3 && w.Playlist.Current?.Path == avi && w.Welcome.Visibility != Visibility.Visible);
             Check("ui: it really plays", WaitUi(() => w.Player.IsPlaying && w.Player.Time > 200, 6000), w.Player.State + " " + w.Player.Time);

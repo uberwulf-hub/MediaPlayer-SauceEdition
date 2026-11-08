@@ -18,7 +18,7 @@ namespace MediaPlayerSauce.UI
             {
                 Style = (Style)Application.Current.FindResource("Dialog"),
                 Owner = owner, Title = title, Width = width,
-                SizeToContent = SizeToContent.Height, ResizeMode = ResizeMode.NoResize,
+                SizeToContent = SizeToContent.Height, ResizeMode = ResizeMode.NoResize, WindowStartupLocation = WindowStartupLocation.CenterOwner,
             };
             if (owner is MainWindow mw && mw.Quiet) { w.ShowActivated = false; }
             return w;
