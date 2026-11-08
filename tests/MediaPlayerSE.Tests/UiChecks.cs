@@ -94,6 +94,17 @@ namespace MediaPlayerSE.Tests
             w.HandleKey(Key.Space, false, false, false);
             Check("ui: Space plays again", WaitUi(() => w.Player.IsPlaying, 3000));
 
+            // clicking the seek bar: the player's time updates mustn't pull the bar back before the button is let go
+            var down = new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Left) { RoutedEvent = UIElement.PreviewMouseLeftButtonDownEvent };
+            w.Seek.RaiseEvent(down);
+            w.Seek.Value = 150;   // where the click put it (15% of the way)
+            WaitUi(() => false, 700);   // the player keeps reporting its time meanwhile
+            Check("ui: while the button is down the bar stays where it was clicked", Math.Abs(w.Seek.Value - 150) < 1, w.Seek.Value.ToString());
+            w.Seek.RaiseEvent(new MouseButtonEventArgs(Mouse.PrimaryDevice, 0, MouseButton.Left) { RoutedEvent = UIElement.PreviewMouseLeftButtonUpEvent });
+            Check("ui: letting go jumps there and playing carries on from there", WaitUi(() => w.Player.Time >= 800 && w.Player.Time < 2500, 3000), w.Player.Time + " ms");
+            WaitUi(() => false, 600);
+            Check("ui: and the bar follows from the new place", w.Seek.Value < 450, w.Seek.Value.ToString());
+
             w.SetFullscreen(true);
             Check("ui: full screen hides the menu and floats the controls over the picture", w.MenuBar.Visibility == Visibility.Collapsed && w.Controls.Parent == w.Overlay && w.IsFullscreen);
             w.HandleKey(Key.Escape, false, false, false);

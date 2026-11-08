@@ -11,6 +11,7 @@ What changes in each version, in plain words. Newest first.
 
 ### Fixed
 
+- Clicking a point on the seek bar now plays from there: the bar used to jump back to where it was playing when you let go.
 - A rare crash when asking the player whether it was playing while it was still opening a file.
 
 ## [0.1.0] - 2026-11-08

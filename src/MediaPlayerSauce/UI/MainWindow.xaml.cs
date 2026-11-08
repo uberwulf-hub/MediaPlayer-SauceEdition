@@ -217,7 +217,7 @@ namespace MediaPlayerSauce.UI
             Playlist.Select(i);
             if (it.IsUrl && Online.WebVideos.IsWebOnly(it.Path)) { Online.WebVideos.OpenInEdge(it.Path, this); return; }
             long start = Settings.Resume && !it.IsUrl ? Settings.ResumeAt(it.Path) : 0;
-            length = -1; lastTime = 0; abA = abB = -1; AbMark.Visibility = Visibility.Collapsed;
+            length = -1; lastTime = 0; abA = abB = -1; seekTarget = -1; AbMark.Visibility = Visibility.Collapsed;
             LblTime.Text = MediaFiles.Time(0); LblLength.Text = "--:--"; Seek.Value = 0;
             Player.Open(it.Path, start, MediaOptionsFor(it.Path));
             Welcome.Visibility = Visibility.Collapsed;
@@ -281,6 +281,7 @@ namespace MediaPlayerSauce.UI
 
         public void StopPlaying()
         {
+            seekTarget = -1;
             RememberPosition();
             Player.Stop();
             UpdateTimeUi(0);
@@ -308,6 +309,8 @@ namespace MediaPlayerSauce.UI
         void UpdateTimeUi(long t)
         {
             if (t < 0) t = 0;
+            // just after a jump the player may still report the old time once or twice: don't let the bar flick back
+            if (seekTarget >= 0 && DateTime.UtcNow < seekHoldUntil && Math.Abs(t - seekTarget) > 1500) return;
             LblTime.Text = MediaFiles.Time(t);
             if (length > 0)
             {
@@ -353,9 +356,14 @@ namespace MediaPlayerSauce.UI
             Vol.MouseWheel += (s, e) => { ChangeVolume(e.Delta > 0 ? 5 : -5); e.Handled = true; };
 
             // the seek bar: drag to scrub (the picture follows), a tip shows the time under the pointer
+            // While the button is down the bar belongs to the person: the player's own time updates don't move it back
+            // (they used to, so letting go after a click jumped back to where it was playing). Letting go seeks there.
+            // (the slider marks the press as handled when it jumps to the point clicked, so listen to handled ones too)
+            Seek.AddHandler(PreviewMouseLeftButtonDownEvent, new MouseButtonEventHandler((s, e) => seeking = true), true);
+            Seek.AddHandler(PreviewMouseLeftButtonUpEvent, new MouseButtonEventHandler((s, e) => EndSeek()), true);
+            AddHandler(PreviewMouseLeftButtonUpEvent, new MouseButtonEventHandler((s, e) => { if (seeking) EndSeek(); }), true);   // let go outside the bar
             Seek.AddHandler(Thumb.DragStartedEvent, new DragStartedEventHandler((s, e) => seeking = true));
-            Seek.AddHandler(Thumb.DragCompletedEvent, new DragCompletedEventHandler((s, e) => { seeking = false; SeekToSlider(); }));
-            Seek.PreviewMouseLeftButtonUp += (s, e) => { if (!seeking) Dispatcher.BeginInvoke(new Action(SeekToSlider)); };
+            Seek.AddHandler(Thumb.DragCompletedEvent, new DragCompletedEventHandler((s, e) => EndSeek()));
             Seek.ValueChanged += (s, e) =>
             {
                 if (seeking && length > 0)
@@ -405,11 +413,23 @@ namespace MediaPlayerSauce.UI
         }
         long lastScrub = -1;
 
+        long seekTarget = -1;
+        DateTime seekHoldUntil;
+
+        void EndSeek()
+        {
+            if (!seeking) return;
+            seeking = false;
+            lastScrub = -1;
+            SeekToSlider();
+        }
+
         void SeekToSlider()
         {
             if (length <= 0 || !Player.Seekable) return;
             long t = (long)(Seek.Value / 1000.0 * length);
             Player.Time = t;
+            seekTarget = t; seekHoldUntil = DateTime.UtcNow.AddMilliseconds(800);
             lastTime = t;
             LblTime.Text = MediaFiles.Time(t);
         }
