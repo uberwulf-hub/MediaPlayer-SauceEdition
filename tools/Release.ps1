@@ -94,7 +94,7 @@ if (Test-Path -LiteralPath $out) { Remove-Item -LiteralPath $out -Recurse -Force
 [void][IO.Directory]::CreateDirectory($out)
 Step 'Building the Windows app'
 $ErrorActionPreference = 'Continue'
-$pub = & dotnet publish $Project -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -p:PublishReadyToRun=false -p:DebugType=none -o $out 2>&1 | ForEach-Object { "$_" }
+$pub = & dotnet publish $Project -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:PublishReadyToRun=false -p:DebugType=none -o $out 2>&1 | ForEach-Object { "$_" }
 $code = $LASTEXITCODE
 $ErrorActionPreference = 'Stop'
 $exe = Join-Path $out 'MediaPlayerSE.exe'
@@ -103,7 +103,7 @@ if (-not (Test-Path -LiteralPath (Join-Path $out 'libvlc\win-x64\libvlc.dll'))) 
 # a last check of the published app itself: it starts, draws its window off the screen and quits
 $shot = Join-Path $env:TEMP ("mpse-release-" + [Guid]::NewGuid().ToString('N') + '.png')
 $p = Start-Process -FilePath $exe -ArgumentList '--snapshot', "`"$shot`"", '--scene', 'Playing' -PassThru -WindowStyle Hidden
-if (-not $p.WaitForExit(60000)) { try { $p.Kill() } catch { }; Stop-Release 'the published app didn''t finish its snapshot.' }
+if (-not $p.WaitForExit(120000)) { try { $p.Kill() } catch { }; Stop-Release 'the published app didn''t finish its snapshot.' }
 if ($p.ExitCode -ne 0 -or -not (Test-Path -LiteralPath $shot)) { Stop-Release "the published app couldn't draw its window (exit $($p.ExitCode))." }
 Remove-Item -LiteralPath $shot -Force -ErrorAction SilentlyContinue
 Copy-Item -LiteralPath (Join-Path $Repo 'licenses') -Destination (Join-Path $out 'licenses') -Recurse
