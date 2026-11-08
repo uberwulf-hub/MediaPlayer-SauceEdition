@@ -6,7 +6,7 @@
   "assets": { "windows": "MediaPlayerSE-windows.zip" },
   "requirements": [
     "Windows 10 or 11 (64-bit)",
-    "About 250 MB of disk space",
+    "About 200 MB of disk space",
     "Nothing else to install: everything it needs comes in the download"
   ],
   "rightsConfirmed": true,

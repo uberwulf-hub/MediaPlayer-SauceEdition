@@ -94,7 +94,7 @@ if (Test-Path -LiteralPath $out) { Remove-Item -LiteralPath $out -Recurse -Force
 [void][IO.Directory]::CreateDirectory($out)
 Step 'Building the Windows app'
 $ErrorActionPreference = 'Continue'
-$pub = & dotnet publish $Project -c Release -r win-x64 --self-contained true -p:PublishReadyToRun=false -p:DebugType=none -o $out 2>&1 | ForEach-Object { "$_" }
+$pub = & dotnet publish $Project -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -p:PublishReadyToRun=false -p:DebugType=none -o $out 2>&1 | ForEach-Object { "$_" }
 $code = $LASTEXITCODE
 $ErrorActionPreference = 'Stop'
 $exe = Join-Path $out 'MediaPlayerSE.exe'

@@ -61,7 +61,7 @@ window on the screen.
 `MediaPlayerSE.exe --snapshot <file.png> --scene Welcome|Playing|Music|Playlist|Osd|Notice|Fullscreen|Minimal` draws
 the window off the screen with made-up media.
 
-`tools\Release.ps1 -Version X.Y.Z` runs the checks, publishes a self-contained 64-bit build, zips it as
+`tools\Release.ps1 -Version X.Y.Z` runs the checks, publishes a self-contained 64-bit build (one MediaPlayerSE.exe plus the libvlc folder), zips it as
 `MediaPlayerSE-windows.zip` and makes the GitHub release that SauceStore lists (`-WhatIf` builds the zip only).
 `tools\Make-Icon.ps1` draws the icon.
 

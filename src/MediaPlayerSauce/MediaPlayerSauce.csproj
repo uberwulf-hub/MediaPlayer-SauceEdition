@@ -27,6 +27,19 @@
     <PackageReference Include="VideoLAN.LibVLC.Windows" Version="3.0.24" />
   </ItemGroup>
 
+  <!-- libVLC loads its plugins from libvlcwin-x64 beside the program: in a single-file build they stay real files -->
+  <Target Name="KeepVlcBesideTheExe" AfterTargets="CollectVlcFilesToCopyWindows">
+    <ItemGroup>
+      <Content Condition="$([System.String]::Copy('%(Content.Link)').StartsWith('libvlc'))">
+        <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+      </Content>
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup>
+    <VlcWindowsX64ExcludeFiles Include="libvlc.lib;libvlccore.lib" />
+  </ItemGroup>
+
   <ItemGroup>
     <Resource Include="MediaPlayer.ico" />
     <InternalsVisibleTo Include="MediaPlayerSE.Tests" />
