@@ -26,6 +26,8 @@ namespace MediaPlayerSE.Tests
                 ("playlist", PlaylistChecks),
                 ("engine", EngineChecks),
                 ("ui", UiChecks),
+                ("discs", DiscChecks),
+                ("openwith", OpenWithChecks),
             };
             var sw = Stopwatch.StartNew();
             foreach (var g in groups)
