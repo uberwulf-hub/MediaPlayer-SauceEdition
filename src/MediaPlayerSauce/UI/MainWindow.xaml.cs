@@ -94,6 +94,7 @@ namespace MediaPlayerSauce.UI
             WireKeys();
             RefreshRecent();
             RestorePlacement();
+            UpdateDefaultPrompt();
             if (!string.IsNullOrEmpty(settings.LoadMessage)) ShowNotice(settings.LoadMessage);
             Closing += OnClosing;
             Closed += (s, e) => Player.Dispose();
@@ -133,7 +134,26 @@ namespace MediaPlayerSauce.UI
         /// <summary>Adds files, folders, playlists and addresses; play = start the first one added.</summary>
         public void OpenPaths(IEnumerable<string> paths, bool play = true, bool next = false)
         {
-            var list = ExpandAll(paths);
+            // one song or video opened to play (double-click in Explorer, Open, Recent, a drop): the others in its folder
+            // come with it, so Next and Previous go through the folder, as in VLC
+            var given = paths.ToList();
+            if (play && !next && Settings.FolderNeighbours && given.Count == 1)
+            {
+                string one = given[0]?.Trim().Trim('"');
+                if (!string.IsNullOrEmpty(one) && !MediaFiles.IsUrl(one) && MediaFiles.IsMedia(one) && File.Exists(one))
+                {
+                    var around = MediaFiles.Neighbours(one);
+                    if (around.Count > 1)
+                    {
+                        Playlist.Clear();
+                        Playlist.Add(around);
+                        var chosen = Playlist.Items.FirstOrDefault(i => i.Path.Equals(Path.GetFullPath(one), StringComparison.OrdinalIgnoreCase)) ?? Playlist.Items[0];
+                        PlayItem(chosen);
+                        return;
+                    }
+                }
+            }
+            var list = ExpandAll(given);
             if (list.Count == 0) { ShowNotice("There was nothing Media Player can play there."); return; }
             // a lone subtitle file dropped on a playing video is added to it
             if (list.All(p => !MediaFiles.IsUrl(p) && MediaFiles.IsSubtitle(p)))
@@ -318,6 +338,8 @@ namespace MediaPlayerSauce.UI
             BtnWDisc.Click += (s, e) => ShowOpenDisc();
             BtnWUrl.Click += (s, e) => ShowOpenUrl();
             BtnWOnline.Click += (s, e) => ShowOnline(null, null);
+            BtnDefaultYes.Click += (s, e) => ShowMakeDefault();
+            BtnDefaultNo.Click += (s, e) => { Settings.DefaultAsked = true; SaveSoon(); UpdateDefaultPrompt(); };
             LblLength.MouseLeftButtonUp += (s, e) => { showRemaining = !showRemaining; UpdateTimeUi(lastTime); LblLength.ToolTip = showRemaining ? "Click to show the length" : "Click to show the time left"; };
 
             Vol.ValueChanged += (s, e) =>

@@ -12,13 +12,15 @@ namespace MediaPlayerSE.Tests
 {
     static partial class Program
     {
-        static MediaPlayerSauce.App app;
+        static Application app;
 
         static void EnsureApp()
         {
             if (app != null) return;
-            app = new MediaPlayerSauce.App { ShutdownMode = ShutdownMode.OnExplicitShutdown };
-            app.InitializeComponent();
+            // a plain Application with the theme: MediaPlayerSauce.App would run the real start-up (real settings, a
+            // real window, the one-copy-at-a-time pipe) as soon as the dispatcher runs
+            app = new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
+            app.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = new Uri("pack://application:,,,/MediaPlayerSE;component/UI/Theme.xaml") });
         }
 
         /// <summary>Lets the window's thread run (the engine's events arrive through it) until cond or the time is up.</summary>

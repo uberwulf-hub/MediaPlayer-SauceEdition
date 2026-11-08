@@ -113,6 +113,7 @@ namespace MediaPlayerSauce.UI
 
             MnuKeys.Click += (s, e) => ShowShortcuts();
             MnuOpenWith.Click += (s, e) => ShowOpenWith();
+            MnuMakeDefault.Click += (s, e) => ShowMakeDefault();
             MnuAbout.Click += (s, e) => ShowAbout();
         }
 

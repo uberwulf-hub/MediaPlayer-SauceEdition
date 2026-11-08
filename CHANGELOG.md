@@ -4,6 +4,15 @@ What changes in each version, in plain words. Newest first.
 
 ## [Unreleased]
 
+### Added
+
+- Opening one song or video brings the others in its folder into the playlist, so Next and Previous go through the folder (Preferences can turn this off).
+- "Make it my default player": the start page asks once, and Help or Preferences open Windows' own Default apps page for Media Player and show, as you choose, which kinds of files now open with it.
+
+### Fixed
+
+- A rare crash when asking the player whether it was playing while it was still opening a file.
+
 ## [0.1.0] - 2026-11-08
 
 ### Added

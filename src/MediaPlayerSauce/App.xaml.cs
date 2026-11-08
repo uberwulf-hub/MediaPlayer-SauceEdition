@@ -21,6 +21,8 @@ namespace MediaPlayerSauce
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+            // only ever the real program: a test that makes an Application of this class must not start the player
+            if (System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name != "MediaPlayerSE") return;
             DarkTitle.ForAllWindows();
             var args = e.Args.ToList();
             string snapshot = Take(args, "--snapshot");

@@ -30,7 +30,13 @@ namespace MediaPlayerSE.Tests
                 ("openwith", OpenWithChecks),
                 ("online", OnlineChecks),
                 ("convert", ConvertChecks),
+                ("default", DefaultChecks),
+                ("neighbours", NeighbourChecks),
             };
+            // the person's real settings must never be touched by a test
+            string real = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "MediaPlayerSE");
+            string Stamp() { try { return Directory.Exists(real) ? string.Join("|", Directory.GetFiles(real).OrderBy(f => f).Select(f => f + "@" + File.GetLastWriteTimeUtc(f).Ticks)) : "none"; } catch (Exception) { return "?"; } }
+            string before = Stamp();
             var sw = Stopwatch.StartNew();
             foreach (var g in groups)
             {
@@ -38,6 +44,7 @@ namespace MediaPlayerSE.Tests
                 try { g.Run(); }
                 catch (Exception ex) { Fail(g.Name + ": the group stopped with " + ex.GetType().Name + ": " + ex.Message + "\n" + ex.StackTrace); }
             }
+            Check("the person's real settings folder was left alone", Stamp() == before);
             try { Directory.Delete(Temp, true); } catch (Exception) { }
             Console.WriteLine();
             if (failed == 0) Console.WriteLine($"ALL PASSED ({passed} checks, {sw.Elapsed.TotalSeconds:0.0} s)");

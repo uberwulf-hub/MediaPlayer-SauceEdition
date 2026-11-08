@@ -79,6 +79,7 @@ namespace MediaPlayerSauce.UI
             // playing
             p.Children.Add(ToolUi.Text("Playing", "H2"));
             p.Children.Add(PrefCheck("Carry on where I left off in long videos and songs", Settings.Resume, v => { Settings.Resume = v; SaveSoon(); }));
+            p.Children.Add(PrefCheck("When I open one song or video, add the others in its folder (so Next and Previous go through the folder)", Settings.FolderNeighbours, v => { Settings.FolderNeighbours = v; SaveSoon(); }));
             p.Children.Add(PrefCheck("Pause when the window is minimised", Settings.PauseOnMinimize, v => { Settings.PauseOnMinimize = v; SaveSoon(); }));
             p.Children.Add(PrefCheck("Use the graphics card to decode video (smoother, uses less power)", Settings.HardwareDecoding, v =>
             {
@@ -232,6 +233,9 @@ namespace MediaPlayerSauce.UI
                     : "Media Player couldn't be taken out of the \"Open with\" list. Windows didn't allow the change.";
             }, false, 0);
             p.Children.Add(ToolUi.Row(new Thickness(0), add, remove));
+            var makeDefault = new Button { Content = "Make it my default player...", Margin = new Thickness(0, 12, 0, 0), HorizontalAlignment = HorizontalAlignment.Left };
+            makeDefault.Click += (s, e) => { ShowMakeDefault(); Refresh(); };
+            p.Children.Add(makeDefault);
             p.Children.Add(ToolUi.Link("Open Windows' Default apps settings", "ms-settings:defaultapps", new Thickness(0, 10, 0, 0)));
             Refresh();
             return p;

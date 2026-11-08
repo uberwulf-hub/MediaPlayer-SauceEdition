@@ -88,11 +88,17 @@ namespace MediaPlayerSauce.Engine
             Lib = new LibVLC(false, Args(Options));
             Lib.SetUserAgent("Media Player (Sauce Edition)", "MediaPlayerSE/" + typeof(Player).Assembly.GetName().Version?.ToString(3));
             Mp = new MediaPlayer(Lib) { EnableHardwareDecoding = o.HardwareDecoding, EnableKeyInput = false, EnableMouseInput = false };
+            Mp.Playing += (s, e) => { state = VLCState.Playing; };
             Mp.Playing += (s, e) => Post(() => { ApplyVolume(); Playing?.Invoke(); });
+            Mp.Paused += (s, e) => { state = VLCState.Paused; };
             Mp.Paused += (s, e) => Post(() => Paused?.Invoke());
+            Mp.Stopped += (s, e) => { state = VLCState.Stopped; };
             Mp.Stopped += (s, e) => Post(() => Stopped?.Invoke());
+            Mp.Opening += (s, e) => { state = VLCState.Opening; };
             Mp.Opening += (s, e) => Post(() => Opening?.Invoke());
+            Mp.EndReached += (s, e) => { state = VLCState.Ended; };
             Mp.EndReached += (s, e) => Post(() => EndReached?.Invoke());
+            Mp.EncounteredError += (s, e) => { state = VLCState.Error; };
             Mp.EncounteredError += (s, e) => Post(() => Failed?.Invoke(DescribeError()));
             Mp.TimeChanged += (s, e) => { long t = e.Time; Post(() => TimeChanged?.Invoke(t)); };
             Mp.LengthChanged += (s, e) => { long l = e.Length; Post(() => LengthChanged?.Invoke(l)); };
@@ -137,17 +143,21 @@ namespace MediaPlayerSauce.Engine
             media.MetaChanged += (s, e) => Post(() => MetaChanged?.Invoke());
             media.ParsedChanged += (s, e) => Post(() => MetaChanged?.Invoke());
             media.DurationChanged += (s, e) => { long d = e.Duration; Post(() => LengthChanged?.Invoke(d)); };
+            state = VLCState.Opening;
             Mp.Play(media);
             old?.Dispose();
         }
 
         public bool HasMedia => media != null;
-        public VLCState State => Mp.State;
-        public bool IsPlaying => Mp.IsPlaying;
-        public bool IsPaused => Mp.State == VLCState.Paused;
-        public void Play() { if (media == null) return; if (Mp.State == VLCState.Ended || Mp.State == VLCState.Stopped || Mp.State == VLCState.Error) Mp.Play(media); else Mp.SetPause(false); }
+        // The state comes from libVLC's own events (kept here as they arrive). libVLC's is_playing / get_state can crash
+        // when asked while it's still opening a file on a busy PC, so they are never called.
+        volatile VLCState state = VLCState.NothingSpecial;
+        public VLCState State => state;
+        public bool IsPlaying => state == VLCState.Playing;
+        public bool IsPaused => state == VLCState.Paused;
+        public void Play() { if (media == null) return; var st = state; if (st == VLCState.Ended || st == VLCState.Stopped || st == VLCState.Error || st == VLCState.NothingSpecial) { state = VLCState.Opening; Mp.Play(media); } else Mp.SetPause(false); }
         public void Pause() { if (Mp.CanPause) Mp.SetPause(true); }
-        public void TogglePause() { if (Mp.IsPlaying) Pause(); else Play(); }
+        public void TogglePause() { if (IsPlaying) Pause(); else Play(); }
         /// <summary>Stops (libVLC's own Stop can wait for the input thread, so it runs off the window's thread).
         /// Opening something new, rebuilding and closing wait for a stop still under way (WaitForStop), so a late stop
         /// never stops the next file and never touches a player that's gone.</summary>

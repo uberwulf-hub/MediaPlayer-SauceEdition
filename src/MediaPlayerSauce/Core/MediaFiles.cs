@@ -84,6 +84,39 @@ namespace MediaPlayerSauce.Core
             }
         }
 
+        /// <summary>The other files of the same kind in a file's folder (songs beside a song, videos beside a video), in
+        /// Explorer's order, the file itself included; just the file when its folder can't be read. No subfolders,
+        /// no hidden files, at most max.</summary>
+        public static List<string> Neighbours(string file, int max = 2000)
+        {
+            var result = new List<string>();
+            string full;
+            try { full = Path.GetFullPath(file); } catch (Exception) { return new List<string> { file }; }
+            bool audio = IsAudio(full);
+            try
+            {
+                var files = Directory.GetFiles(Path.GetDirectoryName(full));
+                Array.Sort(files, NaturalCompare);
+                foreach (var f in files)
+                {
+                    if (audio ? !IsAudio(f) : !IsVideo(f)) continue;
+                    if (!f.Equals(full, StringComparison.OrdinalIgnoreCase))
+                        try { if ((File.GetAttributes(f) & (FileAttributes.Hidden | FileAttributes.System)) != 0) continue; } catch (Exception) { continue; }
+                    result.Add(f);
+                }
+            }
+            catch (Exception) { return new List<string> { full }; }
+            if (!result.Any(f => f.Equals(full, StringComparison.OrdinalIgnoreCase))) result.Add(full);
+            if (result.Count > max)
+            {
+                // keep a window around the file
+                int i = result.FindIndex(f => f.Equals(full, StringComparison.OrdinalIgnoreCase));
+                int start = Math.Clamp(i - max / 2, 0, result.Count - max);
+                result = result.GetRange(start, max);
+            }
+            return result;
+        }
+
         /// <summary>Subtitle files next to a video: same name ("Film.srt") or the name plus a language ("Film.en.srt",
         /// "Film.English.forced.ass"), and any in a "Subs" / "Subtitles" folder beside it. Best match first.</summary>
         public static List<string> FindSubtitles(string video)

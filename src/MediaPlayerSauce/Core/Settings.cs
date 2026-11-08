@@ -51,6 +51,8 @@ namespace MediaPlayerSauce.Core
         public bool Normalize;                   // even out loud and quiet parts
         public string Visual = "";               // music visualisation: "", spectrum, scope, vuMeter, goom, visual
         public bool HardwareDecoding = true;
+        public bool DefaultAsked;                // the start page asked once about making it the default player
+        public bool FolderNeighbours = true;     // opening one file brings the others in its folder into the playlist
 
         /// <summary>Fields this version doesn't know (a newer version wrote them): written back unchanged.</summary>
         public JsonObject Extra = new JsonObject();
@@ -67,7 +69,7 @@ namespace MediaPlayerSauce.Core
         }
 
         static readonly string[] Known = { "version", "volume", "muted", "recent", "positions", "lastFolder", "ytRecent", "showPlaylist", "loop", "shuffle",
-            "subtitleScale", "audioDevice", "resume", "onTop", "pauseOnMinimize", "eq", "window", "importedOld", "uiScale", "normalize", "visual", "hardwareDecoding" };
+            "subtitleScale", "audioDevice", "resume", "onTop", "pauseOnMinimize", "eq", "window", "importedOld", "uiScale", "normalize", "visual", "hardwareDecoding", "defaultAsked", "folderNeighbours" };
 
         public static Settings Load(string file)
         {
@@ -138,6 +140,8 @@ namespace MediaPlayerSauce.Core
             Normalize = Bool(o, "normalize", false);
             Visual = Str(o, "visual", "") switch { "spectrum" => "spectrum", "scope" => "scope", "vuMeter" => "vuMeter", "goom" => "goom", "visual" => "visual", _ => "" };
             HardwareDecoding = Bool(o, "hardwareDecoding", true);
+            DefaultAsked = Bool(o, "defaultAsked", false);
+            FolderNeighbours = Bool(o, "folderNeighbours", true);
             foreach (var kv in o)
                 if (Array.IndexOf(Known, kv.Key) < 0) Extra[kv.Key] = kv.Value?.DeepClone();
         }
@@ -175,6 +179,8 @@ namespace MediaPlayerSauce.Core
             o["normalize"] = Normalize;
             o["visual"] = Visual;
             o["hardwareDecoding"] = HardwareDecoding;
+            o["defaultAsked"] = DefaultAsked;
+            o["folderNeighbours"] = FolderNeighbours;
             foreach (var kv in Extra) if (!o.ContainsKey(kv.Key)) o[kv.Key] = kv.Value?.DeepClone();
             return o;
         }
