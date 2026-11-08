@@ -4,7 +4,7 @@
         xmlns:vlc="clr-namespace:LibVLCSharp.WPF;assembly=LibVLCSharp.WPF"
         Title="Media Player (Sauce Edition)" Width="1100" Height="680" MinWidth="480" MinHeight="320"
         Background="{StaticResource Back}" Foreground="{StaticResource Text}" FontFamily="Segoe UI" FontSize="13"
-        UseLayoutRounding="True" AllowDrop="True" Icon="/MediaPlayer.ico">
+        UseLayoutRounding="True" AllowDrop="True" Icon="pack://application:,,,/MediaPlayerSE;component/MediaPlayer.ico">
     <Grid x:Name="Root">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />

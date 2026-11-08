@@ -21,6 +21,7 @@ namespace MediaPlayerSauce
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
+            DarkTitle.ForAllWindows();
             var args = e.Args.ToList();
             string snapshot = Take(args, "--snapshot");
             string scene = Take(args, "--scene") ?? "Welcome";

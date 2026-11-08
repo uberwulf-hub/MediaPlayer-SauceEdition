@@ -125,6 +125,7 @@ namespace MediaPlayerSauce.Engine
         /// (":video-filter=transform", ":start-time=...") go to this media only.</summary>
         public void Open(string path, long startMs = 0, IEnumerable<string> mediaOptions = null, bool paused = false)
         {
+            WaitForStop();
             currentPath = path;
             var old = media;
             var opts = new List<string>();
@@ -147,9 +148,26 @@ namespace MediaPlayerSauce.Engine
         public void Play() { if (media == null) return; if (Mp.State == VLCState.Ended || Mp.State == VLCState.Stopped || Mp.State == VLCState.Error) Mp.Play(media); else Mp.SetPause(false); }
         public void Pause() { if (Mp.CanPause) Mp.SetPause(true); }
         public void TogglePause() { if (Mp.IsPlaying) Pause(); else Play(); }
-        /// <summary>Stops (libVLC's own Stop can wait for the input thread, so it runs off the window's thread).</summary>
-        public void Stop() { var mp = Mp; ThreadPool.QueueUserWorkItem(_ => { try { mp.Stop(); } catch (Exception) { } }); }
-        public void StopNow() { Mp.Stop(); }
+        /// <summary>Stops (libVLC's own Stop can wait for the input thread, so it runs off the window's thread).
+        /// Opening something new, rebuilding and closing wait for a stop still under way (WaitForStop), so a late stop
+        /// never stops the next file and never touches a player that's gone.</summary>
+        public void Stop()
+        {
+            var mp = Mp;
+            // (Stop, Open, Rebuild and Dispose all run on the window's thread, and the last three wait for this first)
+            var before = pendingStop;
+            var t = Task.Run(() => { try { before?.Wait(5000); } catch (Exception) { } if (!disposed) try { mp.Stop(); } catch (Exception) { } });
+            lock (stopGate) pendingStop = t;
+        }
+        public void StopNow() { WaitForStop(); Mp.Stop(); }
+        readonly object stopGate = new object();
+        Task pendingStop;
+        void WaitForStop()
+        {
+            Task t;
+            lock (stopGate) t = pendingStop;
+            try { t?.Wait(5000); } catch (Exception) { }
+        }
 
         public long Time { get => Mp.Time; set { if (Mp.IsSeekable) Mp.Time = Math.Max(0, value); } }
         public long Length => Mp.Length > 0 ? Mp.Length : (media?.Duration ?? -1);
@@ -353,6 +371,7 @@ namespace MediaPlayerSauce.Engine
             bool wasPaused = IsPaused;
             float rate = Mp.Rate;
             int aDelay = (int)AudioDelayMs, sDelay = (int)SubtitleDelayMs;
+            WaitForStop();
             var oldMp = Mp; var oldLib = Lib; var oldMedia = media;
             media = null;
             oldMp.Stop();
@@ -372,7 +391,8 @@ namespace MediaPlayerSauce.Engine
         public void Dispose()
         {
             if (disposed) return;
-            disposed = true;
+            WaitForStop();
+            lock (stopGate) disposed = true;
             try { Mp.Stop(); } catch (Exception) { }
             Mp.Dispose(); media?.Dispose(); eq?.Dispose(); Lib.Dispose();
         }

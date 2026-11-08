@@ -1,0 +1,18 @@
+{
+  "name": "Media Player (Sauce Edition)",
+  "category": "App",
+  "description": "Plays nearly any video, music file or stream, using the same playback engine as VLC, with a simple, friendly window. Playlists, subtitles, an equalizer, picture controls, full screen, carry on where you left off, convert files, and YouTube, Netflix and Prime Video in their own window.",
+  "icon": "store/icon.png",
+  "assets": { "windows": "MediaPlayerSE-windows.zip" },
+  "requirements": [
+    "Windows 10 or 11 (64-bit)",
+    "About 250 MB of disk space",
+    "Nothing else to install: everything it needs comes in the download"
+  ],
+  "rightsConfirmed": true,
+  "credits": [
+    { "asset": "libVLC 3.0 (VLC's playback engine) and its plugins", "author": "VideoLAN and the VLC authors", "license": "LGPL-2.1-or-later (libVLC); some plugins GPL-2.0-or-later", "source": "https://www.videolan.org/vlc/libvlc.html" },
+    { "asset": "LibVLCSharp and LibVLCSharp.WPF 3.10", "author": "VideoLAN and the LibVLCSharp authors", "license": "LGPL-2.1", "source": "https://code.videolan.org/videolan/LibVLCSharp" },
+    { "asset": ".NET runtime and WPF (bundled with the app)", "author": ".NET Foundation and Contributors", "license": "MIT", "source": "https://github.com/dotnet/runtime" }
+  ]
+}
