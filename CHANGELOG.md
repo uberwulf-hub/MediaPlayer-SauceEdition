@@ -4,6 +4,8 @@ What changes in each version, in plain words. Newest first.
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-08
+
 ### Added
 
 - Media Player (Sauce Edition) is its own app now, with its own download in SauceStore. It plays with VLC's own playback engine, so nearly any video, music file, stream or home-made disc plays, with nothing else to install.
