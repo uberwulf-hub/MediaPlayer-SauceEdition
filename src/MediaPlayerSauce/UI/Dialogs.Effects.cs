@@ -371,7 +371,7 @@ namespace MediaPlayerSauce.UI
 
             p.Children.Add(FxKit.H2("Shape and position", 18));
             var f = FxKit.Form();
-            string[] rot = { "None", "Turn 9000B0 right", "Turn 18000B0", "Turn 9000B0 left", "Flip sideways", "Flip upside down" };
+            string[] rot = { "None", "Turn 90\u00B0 right", "Turn 180\u00B0", "Turn 90\u00B0 left", "Flip sideways", "Flip upside down" };
             FxKit.AddRow(f, "Turn or flip", FxKit.Combo(rot, main.Rotation, i => { if (!loading && i >= 0) main.SetRotation(i); }));
             var aspects = new[] { ("The video's own", ""), ("16:9", "16:9"), ("4:3", "4:3"), ("21:9 (cinema)", "21:9"), ("2.35:1", "235:100"), ("16:10", "16:10"), ("1:1 (square)", "1:1"), ("5:4", "5:4") };
             FxKit.AddRow(f, "Shape (aspect ratio)", FxKit.Combo(aspects.Select(a => a.Item1), Array.FindIndex(aspects, a => a.Item2 == main.Aspect), i => { if (!loading && i >= 0) main.SetAspect(aspects[i].Item2); }));
@@ -388,7 +388,7 @@ namespace MediaPlayerSauce.UI
 
         static string AdjText(int i, double v)
         {
-            return i == 3 ? FxKit.Num(v, "0") + "00B0" : FxKit.Num(v, "0.00");
+            return i == 3 ? FxKit.Num(v, "0") + "\u00B0" : FxKit.Num(v, "0.00");
         }
 
         void ApplyAdjust()
@@ -485,7 +485,7 @@ namespace MediaPlayerSauce.UI
                 else if (e.Key == Key.Down) { Apply(SafeGet(get) - step); e.Handled = true; }
             };
             box.LostKeyboardFocus += (s, e) => Commit();
-            var minus = new Button { Content = "2212", MinWidth = 34, Margin = new Thickness(6, 0, 0, 0), ToolTip = "Earlier" };
+            var minus = new Button { Content = "\u2212", MinWidth = 34, Margin = new Thickness(6, 0, 0, 0), ToolTip = "Earlier" };
             minus.Click += (s, e) => Apply(SafeGet(get) - step);
             var plus = new Button { Content = "+", MinWidth = 34, Margin = new Thickness(4, 0, 0, 0), ToolTip = "Later" };
             plus.Click += (s, e) => Apply(SafeGet(get) + step);

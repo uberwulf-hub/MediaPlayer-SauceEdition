@@ -155,7 +155,7 @@ namespace MediaPlayerSauce.UI
                 if (t.TrackType == TrackType.Video)
                 {
                     var v = t.Data.Video;
-                    if (v.Width > 0 && v.Height > 0) rows.Add(("Picture size", v.Width + " 00D7 " + v.Height));
+                    if (v.Width > 0 && v.Height > 0) rows.Add(("Picture size", v.Width + " \u00D7 " + v.Height));
                     if (v.FrameRateNum > 0 && v.FrameRateDen > 0) rows.Add(("Frames a second", ((double)v.FrameRateNum / v.FrameRateDen).ToString("0.###", CultureInfo.InvariantCulture)));
                 }
                 else if (t.TrackType == TrackType.Audio)
