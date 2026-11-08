@@ -164,11 +164,12 @@ namespace MediaPlayerSauce.UI
                 {
                     if (Directory.Exists(p))
                     {
-                        // a disc's folder (VIDEO_TS / BDMV) plays as a disc
-                        if (Directory.Exists(Path.Combine(p, "VIDEO_TS")) || Path.GetFileName(p.TrimEnd('\\')).Equals("VIDEO_TS", StringComparison.OrdinalIgnoreCase))
-                        { result.Add("dvd:///" + p.TrimEnd('\\').Replace('\\', '/') + "/"); continue; }
-                        if (Directory.Exists(Path.Combine(p, "BDMV")))
-                        { result.Add("bluray:///" + p.TrimEnd('\\').Replace('\\', '/') + "/"); continue; }
+                        // a disc's folder: a DVD plays its main title set's .VOB files (this libVLC has no DVD
+                        // menus), a Blu-ray folder plays as a Blu-ray
+                        string videoTs = Discs.VideoTsFolder(p);
+                        var main = videoTs != null ? Discs.MainTitleSet(videoTs) : null;
+                        if (main != null && main.Files.Count > 0) { result.AddRange(main.Files); continue; }
+                        if (Directory.Exists(Path.Combine(p, "BDMV"))) { result.Add(Discs.Address(DiscKind.BluRay, p)); continue; }
                         result.AddRange(MediaFiles.ExpandFolder(p));
                         Settings.LastFolder = p;
                         continue;
