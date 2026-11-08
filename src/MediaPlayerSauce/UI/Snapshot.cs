@@ -60,6 +60,7 @@ namespace MediaPlayerSauce.UI
             if (name == "Notice") ShowNotice("\"Broken.mp4\" couldn't be played. The file may be damaged, or the address may not be reachable.");
             if (name == "Fullscreen") SetFullscreen(true);
             if (name == "Minimal") SetMinimal(true);
+            if (name == "Effects" || name == "Info" || name == "Convert") SetupDialogScene(name, parts.Length > 1 ? parts[1] : "");
         }
 
         public void SaveSnapshot(string png)
@@ -67,14 +68,23 @@ namespace MediaPlayerSauce.UI
             UpdateLayout();
             var src = PresentationSource.FromVisual(this);
             double dpi = src?.CompositionTarget?.TransformToDevice.M11 ?? 1;
-            var root = (FrameworkElement)Content;
+            // a dialog scene draws the dialog (shown off the screen beside the window) instead
+            var root = snapshotDialog != null ? (FrameworkElement)VisualTreeHelper.GetChild(snapshotDialog, 0) : (FrameworkElement)Content;
+            snapshotDialog?.UpdateLayout();
             int w = (int)Math.Ceiling(root.ActualWidth * dpi), h = (int)Math.Ceiling(root.ActualHeight * dpi);
             var bmp = new RenderTargetBitmap(w, h, 96 * dpi, 96 * dpi, PixelFormats.Pbgra32);
             var dv = new DrawingVisual();
             using (var dc = dv.RenderOpen())
             {
-                dc.DrawRectangle((Brush)FindResource("Back"), null, new Rect(0, 0, root.ActualWidth, root.ActualHeight));
-                dc.DrawRectangle(new VisualBrush(root), null, new Rect(0, 0, root.ActualWidth, root.ActualHeight));
+                dc.DrawRectangle((Brush)FindResource(snapshotDialog != null ? "Panel" : "Back"), null, new Rect(0, 0, root.ActualWidth, root.ActualHeight));
+                var brush = new VisualBrush(root);
+                if (snapshotDialog != null)
+                {
+                    // the dialog's own layout box, not just where it drew something (keeps its margins)
+                    brush.ViewboxUnits = BrushMappingMode.Absolute;
+                    brush.Viewbox = new Rect(0, 0, root.ActualWidth, root.ActualHeight);
+                }
+                dc.DrawRectangle(brush, null, new Rect(0, 0, root.ActualWidth, root.ActualHeight));
             }
             bmp.Render(dv);
             var enc = new PngBitmapEncoder();

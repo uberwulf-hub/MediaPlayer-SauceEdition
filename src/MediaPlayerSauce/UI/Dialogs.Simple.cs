@@ -17,6 +17,7 @@ namespace MediaPlayerSauce.UI
         public InputBox(Window owner, string title, string prompt, string value, string hint, string okText, Func<string, string> check)
         {
             Style = (Style)Application.Current.FindResource("Dialog");
+            WindowStartupLocation = WindowStartupLocation.CenterOwner;
             Owner = owner;
             Title = title;
             Width = 520; SizeToContent = SizeToContent.Height; ResizeMode = ResizeMode.NoResize;
