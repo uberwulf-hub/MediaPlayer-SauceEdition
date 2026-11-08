@@ -26,6 +26,7 @@ namespace MediaPlayerSE.Tests
                 ("playlist", PlaylistChecks),
                 ("engine", EngineChecks),
                 ("ui", UiChecks),
+                ("online", OnlineChecks),
             };
             var sw = Stopwatch.StartNew();
             foreach (var g in groups)
