@@ -29,6 +29,7 @@ namespace MediaPlayerSE.Tests
                 ("discs", DiscChecks),
                 ("openwith", OpenWithChecks),
                 ("online", OnlineChecks),
+                ("convert", ConvertChecks),
             };
             var sw = Stopwatch.StartNew();
             foreach (var g in groups)

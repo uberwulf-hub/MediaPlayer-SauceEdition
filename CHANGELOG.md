@@ -11,3 +11,8 @@ What changes in each version, in plain words. Newest first.
 - Carries on where you left off in long files, and remembers your volume, recent files and settings. The first start brings across App Hub's Media Player's recent files, resume points, volume and YouTube searches (App Hub's own settings are left as they are).
 - Subtitles beside a video load by themselves (also from a Subs folder), and you can add more, move them sooner or later, and make them bigger.
 - Sound up to 200%, sound tracks, sound devices, stereo modes, evening out loud and quiet parts, and music visualisations; picture aspect, crop, zoom, deinterlacing, rotate and flip, snapshots, always on top, A-B repeat, frame by frame and speeds from 0.25x to 4x.
+- An equalizer with presets, picture controls (brightness, contrast, colour), sound and subtitle timing, and media information with live statistics.
+- Save a copy in another format: MP4, MP3, M4A, FLAC, OGG or OGV, without stopping what you're watching.
+- Play a disc: audio CDs, video CDs, and home-made DVDs and Blu-ray discs (no disc menus; shop-bought, copy-protected discs can't be played).
+- Watch online: search YouTube in the app; YouTube, Netflix and Prime Video open in their own Edge window.
+- Preferences, keyboard shortcuts (F1), About, and Explorer's "Open with" (it never changes your default apps).
