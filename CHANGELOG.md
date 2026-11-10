@@ -4,6 +4,11 @@ What changes in each version, in plain words. Newest first.
 
 ## [Unreleased]
 
+### Fixed
+
+- Starts much faster: the first start now saves a list of the playback engine's parts, so later starts no longer open
+  all of its 300-odd files (which Windows' virus checker could stretch to 20 seconds or more).
+
 ## [0.2.0] - 2026-11-08
 
 ### Added
