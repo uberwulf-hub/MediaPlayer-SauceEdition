@@ -48,14 +48,39 @@ namespace MediaPlayerSauce.Engine
         /// <summary>The engine was rebuilt (a new MediaPlayer): the window must give it to its video view again.</summary>
         public event Action Rebuilt;
 
-        static bool coreReady;
+        static bool coreReady, makeCache;
         /// <summary>Loads libVLC from libvlc\win-x64 next to the program (once).</summary>
         public static void InitCore()
         {
             if (coreReady) return;
             string dir = Path.Combine(AppContext.BaseDirectory, "libvlc", Environment.Is64BitProcess ? "win-x64" : "win-x86");
             if (Directory.Exists(dir)) LibVLCSharp.Shared.Core.Initialize(dir); else LibVLCSharp.Shared.Core.Initialize();
+            makeCache = Directory.Exists(dir) && PluginCacheStale(Path.Combine(dir, "plugins"));
             coreReady = true;
+        }
+
+        /// <summary>
+        /// libVLC's plugin cache (plugins\plugins.dat) is missing or older than the plugins (a new version was unzipped
+        /// over the old one). Without it libVLC opens all ~320 plugin files at every start, and on a cold start Windows
+        /// Defender checks each one (Andrew, 2026-11-09: "20+ seconds"); with it only the few needed are loaded. The
+        /// cache is made here, on this PC, rather than shipped: libVLC ignores entries whose file dates don't match.
+        /// </summary>
+        public static bool PluginCacheStale(string pluginDir)
+        {
+            try
+            {
+                if (!Directory.Exists(pluginDir)) return false;
+                var cache = new FileInfo(Path.Combine(pluginDir, "plugins.dat"));
+                if (!cache.Exists || cache.Length == 0) return true;
+                DateTime newest = DateTime.MinValue;
+                foreach (var f in Directory.EnumerateFiles(pluginDir, "*.dll", SearchOption.AllDirectories))
+                {
+                    var t = File.GetLastWriteTimeUtc(f);
+                    if (t > newest) newest = t;
+                }
+                return newest > cache.LastWriteTimeUtc;
+            }
+            catch (Exception) { return false; }
         }
 
         /// <summary>post runs an action on the window's thread (Dispatcher.BeginInvoke), or queues it in tests.</summary>
@@ -85,7 +110,11 @@ namespace MediaPlayerSauce.Engine
         void Create(EngineOptions o)
         {
             Options = o.Clone();
-            Lib = new LibVLC(false, Args(Options));
+            var args = Args(Options);
+            // the first engine of a run writes the plugin cache when it is missing or out of date (a folder that can't
+            // be written, such as Program Files, just carries on without it)
+            if (makeCache) { makeCache = false; args = args.Append("--reset-plugins-cache").ToArray(); }
+            Lib = new LibVLC(false, args);
             Lib.SetUserAgent("Media Player (Sauce Edition)", "MediaPlayerSE/" + typeof(Player).Assembly.GetName().Version?.ToString(3));
             Mp = new MediaPlayer(Lib) { EnableHardwareDecoding = o.HardwareDecoding, EnableKeyInput = false, EnableMouseInput = false };
             Mp.Playing += (s, e) => { state = VLCState.Playing; };

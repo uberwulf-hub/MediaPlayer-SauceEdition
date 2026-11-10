@@ -16,6 +16,19 @@ namespace MediaPlayerSE.Tests
 
             using var p = new Player(new EngineOptions { Headless = true }, a => Posted.Enqueue(a));
             Check("engine: libVLC starts", p.Lib != null && p.Lib.Version.StartsWith("3."), p.Lib?.Version);
+            string plugins = Path.Combine(AppContext.BaseDirectory, "libvlc", "win-x64", "plugins");
+            Check("engine: the first start writes libVLC's plugin cache, so later starts don't open every plugin",
+                File.Exists(Path.Combine(plugins, "plugins.dat")) && !Player.PluginCacheStale(plugins));
+
+            string pc = Dir("plugin-cache");
+            File.WriteAllText(Path.Combine(pc, "a.dll"), "x");
+            bool missing = Player.PluginCacheStale(pc);
+            File.WriteAllText(Path.Combine(pc, "plugins.dat"), "cache");
+            File.SetLastWriteTimeUtc(Path.Combine(pc, "a.dll"), DateTime.UtcNow.AddMinutes(-5));
+            bool fresh = !Player.PluginCacheStale(pc);
+            File.SetLastWriteTimeUtc(Path.Combine(pc, "a.dll"), DateTime.UtcNow.AddMinutes(5));
+            Check("engine: the plugin cache is made again when missing or older than the plugins (an update)",
+                missing && fresh && Player.PluginCacheStale(pc) && !Player.PluginCacheStale(Path.Combine(pc, "nope")));
             bool playing = false, ended = false; string failedWith = null; long length = -1;
             p.Playing += () => playing = true;
             p.EndReached += () => ended = true;
