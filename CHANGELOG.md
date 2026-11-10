@@ -4,6 +4,8 @@ What changes in each version, in plain words. Newest first.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-11-10
+
 ### Fixed
 
 - Starts much faster: the first start now saves a list of the playback engine's parts, so later starts no longer open
