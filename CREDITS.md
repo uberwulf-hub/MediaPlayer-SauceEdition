@@ -15,9 +15,20 @@ Edition) isn't made by or affiliated with VideoLAN; VLC is a trademark of VideoL
 
 The `licenses` folder is copied next to `MediaPlayerSE.exe` in every release.
 
+## Third-party software inside the Android app
+
+| What | Author | Licence | Where |
+|---|---|---|---|
+| libVLC for Android 3.6.5 (`org.videolan.android:libvlc-all`: libvlc.so, the plugins and its Java part) | VideoLAN and the VLC authors | LGPL-2.1-or-later; some plugins are GPL-2.0-or-later | https://code.videolan.org/videolan/vlc-android (`assets/LGPL-2.1.txt`, `assets/GPL-2.0.txt` in the .apk) |
+| AndroidX (AppCompat, Core, RecyclerView, Media, DocumentFile) | The Android Open Source Project | Apache-2.0 | https://developer.android.com/jetpack/androidx |
+
+The same `licenses` folder is packed into the .apk's assets.
+
 ### libVLC's source
 
 libVLC is used unchanged, as VideoLAN builds it (the NuGet package `VideoLAN.LibVLC.Windows` 3.0.24). Its complete
 source is VLC 3.0's, from VideoLAN: https://download.videolan.org/pub/videolan/vlc/ and
 https://code.videolan.org/videolan/vlc (branch 3.0.x). libVLC and LibVLCSharp are separate libraries loaded at run
-time, so they can be replaced with other builds of the same version.
+time, so they can be replaced with other builds of the same version. On Android, libVLC is used unchanged as
+VideoLAN publishes it on Maven Central (`org.videolan.android:libvlc-all` 3.6.5); its source is
+https://code.videolan.org/videolan/vlc-android (tag 3.6.5) and VLC 3.0's.

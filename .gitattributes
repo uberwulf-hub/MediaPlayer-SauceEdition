@@ -7,3 +7,9 @@
 *.json text eol=crlf
 *.ico binary
 *.png binary
+*.jar binary
+gradlew text eol=lf
+*.bat text eol=crlf
+*.kt text eol=lf
+*.kts text eol=lf
+*.yml text eol=lf

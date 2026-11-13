@@ -1,0 +1,102 @@
+# Builds the Windows and Android versions and publishes a GitHub release. SauceStore picks it up automatically (it
+# reads saucestore.json from the release's tag).
+#
+# Start it on GitHub: Actions > Release > Run workflow, and type the version (like v0.3.0).
+# Before that: bump <Version> in src/MediaPlayerSauce/MediaPlayerSauce.csproj to match, and write what changed in
+# release-notes/v<version>.md (each line becomes one entry in SauceStore's Version history) and in CHANGELOG.md.
+#
+# Started only by hand (not by pushing a tag) so it always runs on the main branch, where the Android signing key is
+# cached; caches made on a tag run can't be read by later runs.
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to publish, like v0.3.0 (must match <Version> in MediaPlayerSauce.csproj)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Version matches the project and isn't released yet
+        env:
+          VERSION: ${{ inputs.version }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          PROJ="v$(sed -n 's:.*<Version>\(.*\)</Version>.*:\1:p' src/MediaPlayerSauce/MediaPlayerSauce.csproj | head -1)"
+          if [ "$VERSION" != "$PROJ" ]; then echo "::error::You asked for $VERSION but MediaPlayerSauce.csproj says $PROJ. Bump <Version> first."; exit 1; fi
+          if gh release view "$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then echo "::error::$VERSION is already released."; exit 1; fi
+          python3 -c "import json; d=json.load(open('saucestore.json', encoding='utf-8-sig')); assert d['rightsConfirmed'], 'rightsConfirmed is false'"
+
+  windows:
+    needs: check
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with: { dotnet-version: '10.0.x' }
+      - name: Run the checks
+        run: dotnet run --project tests\MediaPlayerSE.Tests -c Release
+      - name: Build the Windows app, check it starts, and zip it (SauceStore unzips it and starts MediaPlayerSE.exe)
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $out = 'build\MediaPlayerSE'
+          dotnet publish src\MediaPlayerSauce\MediaPlayerSauce.csproj -c Release -r win-x64 --self-contained true `
+            -p:PublishSingleFile=true -p:PublishReadyToRun=false -p:DebugType=none -o $out
+          if ($LASTEXITCODE) { throw 'The build failed.' }
+          if (-not (Test-Path "$out\libvlc\win-x64\libvlc.dll")) { throw 'libVLC is missing from the build.' }
+          # a last check of the published app itself: it starts, draws its window off the screen and quits
+          $shot = Join-Path $env:RUNNER_TEMP 'snapshot.png'
+          $p = Start-Process -FilePath "$out\MediaPlayerSE.exe" -ArgumentList '--snapshot', "`"$shot`"", '--scene', 'Playing' -PassThru -WindowStyle Hidden
+          if (-not $p.WaitForExit(120000)) { $p.Kill(); throw "The published app didn't finish its snapshot." }
+          if ($p.ExitCode -ne 0 -or -not (Test-Path $shot)) { throw "The published app couldn't draw its window (exit $($p.ExitCode))." }
+          Copy-Item licenses "$out\licenses" -Recurse
+          Copy-Item README.md, CREDITS.md, CHANGELOG.md $out
+          New-Item -ItemType Directory dist-release | Out-Null
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          [IO.Compression.ZipFile]::CreateFromDirectory((Resolve-Path $out), "$PWD\dist-release\MediaPlayerSE-windows.zip", [IO.Compression.CompressionLevel]::Optimal, $true)
+          Get-Item dist-release\MediaPlayerSE-windows.zip | Select-Object Name, Length
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-zip
+          path: dist-release/MediaPlayerSE-windows.zip
+
+  android:
+    needs: check
+    uses: ./.github/workflows/android.yml
+    secrets: inherit
+
+  publish:
+    needs: [windows, android]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          set -e
+          ls -la dist
+          NOTES="release-notes/$VERSION.md"
+          if [ ! -f "$NOTES" ]; then
+            # no release notes file: use this version's section of CHANGELOG.md
+            NOTES="$RUNNER_TEMP/notes.md"
+            tr -d '\r' < CHANGELOG.md | awk -v v="## [${VERSION#v}]" 'index($0, v) == 1 {on=1; next} /^## \[/ {on=0} on' \
+              | grep -v '^### ' | sed '/^\s*$/d' > "$NOTES"
+          fi
+          if [ -s "$NOTES" ]; then NOTE_ARGS=(--notes-file "$NOTES"); else NOTE_ARGS=(--generate-notes); fi
+          gh release create "$VERSION" dist/MediaPlayerSE-windows.zip dist/MediaPlayerSE-android.apk \
+            --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Media Player (Sauce Edition) ${VERSION#v}" "${NOTE_ARGS[@]}"

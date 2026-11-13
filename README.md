@@ -1,6 +1,6 @@
 # Media Player (Sauce Edition)
 
-A video and music player for Windows that plays nearly anything, with a simple, friendly window. It plays with
+A video and music player for Windows and Android that plays nearly anything, with a simple, friendly window. It plays with
 **libVLC**, the playback engine of the VLC media player, so the formats VLC plays play here too, with nothing else to
 install. It grew out of App Hub's Media Player (which used Windows' own decoders and needed Store extensions for many
 formats).
@@ -31,6 +31,26 @@ Media Player (Sauce Edition) isn't made by or affiliated with VideoLAN; VLC is a
 - **Watch online**: YouTube search in the app; YouTube, Netflix and Prime Video play in their own Edge window
   (YouTube only plays in a browser, and Netflix and Prime Video are copy-protected).
 
+## On Android
+
+The Android app (`android\`, Android 7.0 and newer) plays with libVLC too, so the same formats play:
+
+- **Open** files (several at once), a whole folder (in natural order, with a subtitle file of the same name loaded
+  beside each video) or a network address (http, https, rtsp, rtmp, mms, udp, internet radio, playlists, YouTube
+  links); the **Videos** and **Music** lists show what's on the phone (it asks to see them the first time); **Recent**
+  remembers what was played and where it was left.
+- **Open with** and **Share** from other apps (Files, the browser, a chat).
+- **Player**: a seek bar, 10-second skips (or a double tap on the left or right), previous and next, loop (the list
+  or one), mix up, the playlist (add, jump, remove), subtitles and sound tracks (and adding a subtitle file), speeds
+  from 0.25x to 4x, picture size (best fit, fill, 16:9, 4:3, original) and media information. The controls hide by
+  themselves during a video; the screen stays on while one plays.
+- **Carries on where you left off** in anything longer than three minutes, as on Windows.
+- **Music keeps playing** with the screen off or in another app, with a notification and lock-screen controls
+  (headphone buttons work too); it pauses for calls and when headphones come out. A video pauses when the app is
+  left, or (if More > Keep playing as sound is ticked) carries on as sound only.
+
+Not on Android: the equalizer and effects, converting, discs, Watch online's Edge windows and App Hub's old settings.
+
 ## Saved things
 
 `%APPDATA%\MediaPlayerSE\settings.json` keeps the volume, recent files, where each file was left, the equalizer and
@@ -53,6 +73,12 @@ its files to the copy already open.
 Needs the .NET 10 SDK. `dotnet build src\MediaPlayerSauce` builds it (libVLC comes from the
 `VideoLAN.LibVLC.Windows` NuGet package into `libvlc\win-x64`).
 
+The Android app needs JDK 17 or newer and the Android SDK (Android Studio, or SauceStore's
+`tools/Install-AndroidTools.ps1`): open `android` in Android Studio and press Run, or `cd android` and
+`./gradlew testDebugUnitTest lintDebug assembleDebug` for the checks, lint and a debug .apk. libVLC comes from
+`org.videolan.android:libvlc-all` on Maven Central. Its version comes from `<Version>` in `MediaPlayerSauce.csproj`
+(1.2.3 becomes versionCode 10203), so one bump covers both.
+
 `dotnet run --project tests\MediaPlayerSE.Tests -c Release [-- group,group]` runs the checks: files, settings
 (including App Hub's old settings), playlist, the engine (real playback of test files made on the spot, with libVLC's
 silent outputs), the window off the screen, and the dialogs. Nothing touches your settings, plays a sound or opens a
@@ -61,9 +87,38 @@ window on the screen.
 `MediaPlayerSE.exe --snapshot <file.png> --scene Welcome|Playing|Music|Playlist|Osd|Notice|Fullscreen|Minimal` draws
 the window off the screen with made-up media.
 
-`tools\Release.ps1 -Version X.Y.Z` runs the checks, publishes a self-contained 64-bit build (one MediaPlayerSE.exe plus the libvlc folder), zips it as
-`MediaPlayerSE-windows.zip` and makes the GitHub release that SauceStore lists (`-WhatIf` builds the zip only).
 `tools\Make-Icon.ps1` draws the icon.
+
+## Releasing to SauceStore
+
+Releases are built, signed and published by GitHub Actions (the same setup as Bored Games), so they can be started
+from anywhere, including a phone.
+
+1. Bump `<Version>` in `src\MediaPlayerSauce\MediaPlayerSauce.csproj` (it sets the Windows version and Android's
+   `versionName`/`versionCode`).
+2. Write what changed in `release-notes\v<version>.md`, one change per line. SauceStore's Version history tags lines
+   by their first word: "Added …" (New), "Fixed …" (Fixed), "Known issue: …" (Known bug). Put the same changes in
+   `CHANGELOG.md` under `## [<version>] - <date>` (it goes inside the Windows zip).
+3. Commit and push to main, then on GitHub go to **Actions → Release → Run workflow** and type the version (for
+   example `v0.3.0`). `.\tools\Release.ps1` does the same from a PC.
+
+The workflow checks the version matches the project, runs the Windows checks and the Android checks, publishes the
+self-contained 64-bit Windows build (one MediaPlayerSE.exe plus the libvlc folder), checks it starts, zips it as
+`MediaPlayerSE-windows.zip`, builds and signs `MediaPlayerSE-android.apk`, and creates the release. SauceStore picks
+it up within about 10 minutes.
+
+**Android signing key:** made by GitHub on the first release and kept in the repository's Actions cache.
+`keep-android-key.yml` touches it every 3 days so GitHub never clears it. To make it permanent, run **Actions → Back
+up the Android key** once and add the three secrets it lists. Always sign with this key: Android only installs an
+update signed with the same key.
+
+**Windows:** the app is unsigned, as before.
+
+`"rightsConfirmed": true` in `saucestore.json` is your statement that the release passed SauceStore's
+`docs/CONTENT-POLICY.md`; the workflow refuses to run when it's false.
+
+`.github/workflows/build.yml` runs the checks on every push and builds a debug .apk and the Windows app folder for
+quick testing (download them from the run's *Artifacts*). Don't publish those; use the Release workflow.
 
 ## Layout
 
@@ -75,11 +130,19 @@ src\MediaPlayerSauce\
   Online\                  YouTube search and Edge windows
   UI\                      the window (MainWindow.*), the dialogs (Dialogs.*), the theme, snapshots
 tests\MediaPlayerSE.Tests  the checks
-tools\                     Release.ps1, Make-Icon.ps1
+android\                   the Android app (Kotlin): PlaybackService (libVLC, the notification, playing on with the
+                           screen off), MainActivity (start screen), PlayerActivity (the player), MediaKinds and
+                           Playlist (plain Kotlin, with unit tests in app\src\test)
+release-notes\             what each release changed, for SauceStore's Version history
+tools\                     Release.ps1 (starts the Release workflow), Make-Icon.ps1
 licenses\                  LGPL-2.1, GPL-2.0, .NET's MIT licence (copied into every release)
 ```
 
 ## Not tried yet
+
+On Android: a real phone. The app was run on an Android 11 emulator (start screen, lists, a video playing and
+carrying on where it was left, music with its cover and the notification after leaving the app, Open with), but not
+the notification's own buttons, Share, folders, network addresses, subtitles, rotation or a real phone's speed.
 
 Everything by hand on a real screen: the picture itself (only off-screen pictures and the silent engine were
 checked), sound through real speakers, dragging and dropping, full screen on a second monitor, media keys, the
