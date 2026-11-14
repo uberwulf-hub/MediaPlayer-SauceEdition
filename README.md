@@ -36,8 +36,11 @@ Media Player (Sauce Edition) isn't made by or affiliated with VideoLAN; VLC is a
 The Android app (`android\`, Android 7.0 and newer) plays with libVLC too, so the same formats play:
 
 - **Open** files (several at once), a whole folder (in natural order, with a subtitle file of the same name loaded
-  beside each video) or a network address (http, https, rtsp, rtmp, mms, udp, internet radio, playlists, YouTube
-  links); the **Videos** and **Music** lists show what's on the phone (it asks to see them the first time); **Recent**
+  beside each video), files from **Google Drive** (the Drive button: Android's file picker, ☰ > Drive) or, from the ⋮
+  menu, a network address (http, https, rtsp, rtmp, mms, udp, internet radio, playlists, YouTube links); the
+  **Suno** button explains saving Suno songs as MP3 (Suno doesn't let other apps stream them, so they then show in
+  Music), opens the Suno app, and plays a Suno link or share when Suno allows it (`SunoLinks.kt` reads the song
+  page); the **Videos** and **Music** lists show what's on the phone (it asks to see them the first time); **Recent**
   remembers what was played and where it was left.
 - **Open with** and **Share** from other apps (Files, the browser, a chat).
 - **Player**: a seek bar, 10-second skips (or a double tap on the left or right), previous and next, loop (the list
@@ -49,7 +52,15 @@ The Android app (`android\`, Android 7.0 and newer) plays with libVLC too, so th
   (headphone buttons work too); it pauses for calls and when headphones come out. A video pauses when the app is
   left, or (if More > Keep playing as sound is ticked) carries on as sound only.
 
-Not on Android: the equalizer and effects, converting, discs, Watch online's Edge windows and App Hub's old settings.
+- **Android Auto** (a car's screen, like the Kia Sorento's): Media Player shows up as a music app with **Recent** and
+  **Songs** to browse, the usual playback controls, and "Hey Google, play <song or artist> on Media Player". Android
+  Auto only lists apps from the Play Store unless it's told otherwise, so once on the phone: open Android Auto's
+  settings, tap **Version** ten times (yes to developer settings), then ⋮ > **Developer settings** > tick **Unknown
+  sources**; then in **Customize launcher**, tick Media Player. `CarLibrary.kt` is what the car browses;
+  `CarBrowseTest` (in `app/src/androidTest`) connects the way the car does and plays a song.
+
+Not possible: Amazon Music (its songs are copy-protected and only play in Amazon's app). Not on Android yet: the
+equalizer and effects, converting, discs, Watch online's Edge windows and App Hub's old settings.
 
 ## Saved things
 

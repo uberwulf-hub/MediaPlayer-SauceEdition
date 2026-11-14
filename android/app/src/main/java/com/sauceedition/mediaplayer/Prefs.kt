@@ -27,6 +27,11 @@ class Prefs(context: Context) {
         get() = sp.getBoolean("videoInBackground", false)
         set(v) = sp.edit().putBoolean("videoInBackground", v).apply()
 
+    /** The "where Drive is in the picker" tip has been shown. */
+    var driveTipShown: Boolean
+        get() = sp.getBoolean("driveTipShown", false)
+        set(v) = sp.edit().putBoolean("driveTipShown", v).apply()
+
     // ---- recent files: newest first, at most 30
     fun recent(): List<Item> = readItems("recent")
 

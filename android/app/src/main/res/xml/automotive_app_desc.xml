@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- tells Android Auto that Media Player is a music app, so it can be added to the car's launcher -->
+<automotiveApp>
+    <uses name="media" />
+</automotiveApp>

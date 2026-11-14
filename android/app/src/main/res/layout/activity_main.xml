@@ -50,10 +50,15 @@
             android:text="@string/open_folder"
             app:drawableTopCompat="@drawable/ic_folder" />
         <TextView
-            android:id="@+id/openAddress"
+            android:id="@+id/openDrive"
             style="@style/OpenButton"
-            android:text="@string/open_address"
-            app:drawableTopCompat="@drawable/ic_link" />
+            android:text="@string/open_drive"
+            app:drawableTopCompat="@drawable/ic_cloud" />
+        <TextView
+            android:id="@+id/openSuno"
+            style="@style/OpenButton"
+            android:text="@string/open_suno"
+            app:drawableTopCompat="@drawable/ic_sparkle" />
     </LinearLayout>
 
     <LinearLayout

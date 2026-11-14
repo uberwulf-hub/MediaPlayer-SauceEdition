@@ -4,6 +4,20 @@ What changes in each version, in plain words. Newest first.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-14
+
+### Added
+
+- Android: a Drive button picks songs and videos from Google Drive (Android's file picker, with a tip the first time on where Drive is).
+- Android Auto: Media Player is a music app on the car's screen (Recent, Songs, playback controls, and "play <song> on Media Player"). As it isn't from the Play Store, Android Auto needs Unknown sources turned on once in its developer settings.
+- Android: a Suno button explains saving Suno songs to the phone (they then show in Music), opens the Suno app, and plays Suno links when Suno allows it; sharing a Suno link to Media Player works too. The web and radio link box moved to the ⋮ menu.
+
+### Fixed
+
+- Android: opening a file from Google Drive no longer freezes the player while it downloads.
+
+- Android: the player's buttons (loop, previous, back, play, forward, next, mix up) all fit on narrower phones such as the Galaxy S23; loop and mix up were cut off at the edges.
+
 ## [0.3.0] - 2026-11-14
 
 ### Added

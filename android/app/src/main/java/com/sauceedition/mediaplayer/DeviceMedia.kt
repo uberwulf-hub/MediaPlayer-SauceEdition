@@ -27,6 +27,10 @@ object DeviceMedia {
     fun allowed(context: Context, permission: String) =
         ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
 
+    /** The phone's songs, or none when Media Player hasn't been allowed to see them (Android Auto can't ask). */
+    fun musicEntries(context: Context): List<Entry> =
+        if (allowed(context, musicPermission())) music(context) else emptyList()
+
     /** Every video, newest first. */
     fun videos(context: Context): List<Entry> {
         val out = ArrayList<Entry>()

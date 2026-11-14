@@ -19,6 +19,7 @@ android {
         targetSdk = 35
         versionCode = versionParts[0] * 10000 + versionParts[1] * 100 + versionParts[2]
         versionName = appVersion
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         // Phones and tablets (ARM). Leaving out the x86 copies of libVLC keeps the download about half the size.
         // (./gradlew -Pemulator ... adds the x86_64 copy, for trying it on a PC's Android emulator)
         ndk {
@@ -76,4 +77,6 @@ dependencies {
     implementation("androidx.media:media:1.7.0")
     implementation("androidx.documentfile:documentfile:1.0.1")
     testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
 }
