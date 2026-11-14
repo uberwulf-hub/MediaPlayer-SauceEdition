@@ -109,7 +109,8 @@ class MainActivity : AppCompatActivity(), PlaybackService.Listener {
 
         findViewById<View>(R.id.openFiles).setOnClickListener { pickFiles.launch(PICK_TYPES) }
         findViewById<View>(R.id.openFolder).setOnClickListener { pickFolder.launch(null) }
-        findViewById<View>(R.id.openAddress).setOnClickListener { askAddress() }
+        findViewById<View>(R.id.openDrive).setOnClickListener { openDrive() }
+        findViewById<View>(R.id.openSuno).setOnClickListener { showSunoHelp() }
         findViewById<View>(R.id.tabRecent).setOnClickListener { showTab(Tab.RECENT) }
         findViewById<View>(R.id.tabVideos).setOnClickListener { showTab(Tab.VIDEOS) }
         findViewById<View>(R.id.tabMusic).setOnClickListener { showTab(Tab.MUSIC) }
@@ -256,11 +257,39 @@ class MainActivity : AppCompatActivity(), PlaybackService.Listener {
                     input.error = getString(R.string.address_bad)
                 } else {
                     dialog.dismiss()
-                    play(listOf(Item(address, MediaKinds.displayName(address))), 0)
+                    if (SunoLinks.isSunoLink(address)) SunoUi.open(this, address, { play(listOf(it), 0) })
+                    else play(listOf(Item(address, MediaKinds.displayName(address))), 0)
                 }
             }
         }
         dialog.show()
+    }
+
+    /** Google Drive is in Android's file picker (☰ > Drive); the first time, say where. */
+    private fun openDrive() {
+        if (prefs.driveTipShown) {
+            pickFiles.launch(PICK_TYPES)
+            return
+        }
+        AlertDialog.Builder(this)
+            .setTitle(R.string.drive_tip_title)
+            .setMessage(R.string.drive_tip)
+            .setPositiveButton(R.string.got_it) { _, _ ->
+                prefs.driveTipShown = true
+                pickFiles.launch(PICK_TYPES)
+            }
+            .setNegativeButton(R.string.cancel, null)
+            .show()
+    }
+
+    private fun showSunoHelp() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.suno_title)
+            .setMessage(R.string.suno_help)
+            .setPositiveButton(R.string.open_suno_app) { _, _ -> SunoUi.openSuno(this) }
+            .setNeutralButton(R.string.paste_link) { _, _ -> askAddress() }
+            .setNegativeButton(R.string.show_music) { _, _ -> showTab(Tab.MUSIC) }
+            .show()
     }
 
     private fun keepAccess(uri: Uri) {
@@ -270,13 +299,15 @@ class MainActivity : AppCompatActivity(), PlaybackService.Listener {
 
     private fun showMenu(anchor: View) {
         val menu = PopupMenu(this, anchor)
-        val bg = menu.menu.add(0, 1, 0, R.string.preferences).setCheckable(true).setChecked(prefs.videoInBackground)
-        menu.menu.add(0, 2, 1, R.string.clear_recent)
-        menu.menu.add(0, 3, 2, R.string.about)
+        menu.menu.add(0, 4, 0, R.string.open_address)
+        val bg = menu.menu.add(0, 1, 1, R.string.preferences).setCheckable(true).setChecked(prefs.videoInBackground)
+        menu.menu.add(0, 2, 2, R.string.clear_recent)
+        menu.menu.add(0, 3, 3, R.string.about)
         menu.setOnMenuItemClickListener {
             when (it.itemId) {
                 1 -> { prefs.videoInBackground = !bg.isChecked }
                 2 -> { prefs.clearRecent(); load() }
+                4 -> askAddress()
                 3 -> AlertDialog.Builder(this)
                     .setTitle(R.string.app_name)
                     .setMessage(getString(R.string.about_text, BuildConfig.VERSION_NAME))

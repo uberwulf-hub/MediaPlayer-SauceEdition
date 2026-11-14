@@ -58,6 +58,8 @@ class PlayerActivity : AppCompatActivity(), PlaybackService.Listener {
     private var service: PlaybackService? = null
     private var bound = false
     private var opening: List<Item>? = null
+    /** A shared Suno link is being looked up: stay open even though nothing plays yet. */
+    private var waitingForLink = false
     private var seeking = false
     private var controlsShown = true
     private val handler = Handler(Looper.getMainLooper())
@@ -72,7 +74,7 @@ class PlayerActivity : AppCompatActivity(), PlaybackService.Listener {
             s.player.videoScale = SCALES[prefs.scale.coerceIn(SCALES.indices)]
             opening?.let { s.playList(it, 0) }
             opening = null
-            if (s.current == null) {
+            if (s.current == null && !waitingForLink) {
                 finish()
                 return
             }
@@ -205,6 +207,17 @@ class PlayerActivity : AppCompatActivity(), PlaybackService.Listener {
         if (uris.isEmpty()) return null
         // only once: not again when the screen is made again
         setIntent(Intent(this, PlayerActivity::class.java))
+        // a Suno link (Share from the Suno app): read the song page first
+        uris.singleOrNull()?.toString()?.takeIf { SunoLinks.isSunoLink(it) }?.let { link ->
+            waitingForLink = true
+            SunoUi.open(this, link, onPlayable = { item ->
+                waitingForLink = false
+                startService(Intent(this, PlaybackService::class.java))
+                val s = service
+                if (s != null) s.playList(listOf(item), 0) else opening = listOf(item)
+            }, onGiveUp = { waitingForLink = false; if (service?.current == null) finish() })
+            return null
+        }
         return uris.map { Item(it.toString(), DeviceMedia.nameOf(this, it)) }
     }
 
@@ -253,7 +266,7 @@ class PlayerActivity : AppCompatActivity(), PlaybackService.Listener {
                 art.imageTintList = getColorStateList(R.color.accent)
             }
         }
-        bufferingView.visibility = if (s.buffering && playing) View.VISIBLE else View.GONE
+        bufferingView.visibility = if ((s.buffering && playing) || s.opening) View.VISIBLE else View.GONE
         loopButton.setImageResource(if (s.loop == Loop.ONE) R.drawable.ic_repeat_one else R.drawable.ic_repeat)
         loopButton.alpha = if (s.loop == Loop.OFF) 0.45f else 1f
         shuffleButton.alpha = if (s.shuffle) 1f else 0.45f

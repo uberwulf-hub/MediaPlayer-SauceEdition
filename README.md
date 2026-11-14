@@ -36,8 +36,11 @@ Media Player (Sauce Edition) isn't made by or affiliated with VideoLAN; VLC is a
 The Android app (`android\`, Android 7.0 and newer) plays with libVLC too, so the same formats play:
 
 - **Open** files (several at once), a whole folder (in natural order, with a subtitle file of the same name loaded
-  beside each video) or a network address (http, https, rtsp, rtmp, mms, udp, internet radio, playlists, YouTube
-  links); the **Videos** and **Music** lists show what's on the phone (it asks to see them the first time); **Recent**
+  beside each video), files from **Google Drive** (the Drive button: Android's file picker, ☰ > Drive) or, from the ⋮
+  menu, a network address (http, https, rtsp, rtmp, mms, udp, internet radio, playlists, YouTube links); the
+  **Suno** button explains saving Suno songs as MP3 (Suno doesn't let other apps stream them, so they then show in
+  Music), opens the Suno app, and plays a Suno link or share when Suno allows it (`SunoLinks.kt` reads the song
+  page); the **Videos** and **Music** lists show what's on the phone (it asks to see them the first time); **Recent**
   remembers what was played and where it was left.
 - **Open with** and **Share** from other apps (Files, the browser, a chat).
 - **Player**: a seek bar, 10-second skips (or a double tap on the left or right), previous and next, loop (the list
@@ -49,7 +52,8 @@ The Android app (`android\`, Android 7.0 and newer) plays with libVLC too, so th
   (headphone buttons work too); it pauses for calls and when headphones come out. A video pauses when the app is
   left, or (if More > Keep playing as sound is ticked) carries on as sound only.
 
-Not on Android: the equalizer and effects, converting, discs, Watch online's Edge windows and App Hub's old settings.
+Not possible: Amazon Music (its songs are copy-protected and only play in Amazon's app). Not on Android yet: the
+equalizer and effects, converting, discs, Watch online's Edge windows and App Hub's old settings.
 
 ## Saved things
 

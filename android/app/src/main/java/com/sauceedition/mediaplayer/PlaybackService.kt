@@ -158,6 +158,7 @@ class PlaybackService : Service() {
         closeFile()
         session.release()
         tagReader.shutdownNow()
+        opener.shutdownNow()
         main.removeCallbacksAndMessages(null)
         super.onDestroy()
     }
@@ -201,20 +202,57 @@ class PlaybackService : Service() {
         } else changed()
     }
 
+    /** True while a file is being fetched before it can play (a Google Drive file downloading). */
+    var opening = false
+        private set
+    private var openToken = 0
+    private val opener = Executors.newSingleThreadExecutor()
+
     private fun startItem(item: Item?) {
         skipAfterError?.let { main.removeCallbacks(it) }
         skipAfterError = null
+        val token = ++openToken
         if (item == null) {
+            opening = false
             stopPlaying()
             return
         }
-        val media = try {
-            makeMedia(item)
-        } catch (e: Exception) {
-            Log.w(TAG, "can't open ${item.uri}", e)
-            error(getString(R.string.cant_open, item.title))
+        val uri = Uri.parse(item.uri)
+        if (uri.scheme != "content") {
+            opening = false
+            playMedia(item, Media(libVLC, uri), null)
             return
         }
+        // content:// addresses (what Android's file picker gives) are opened here and handed to libVLC as a file
+        // descriptor. Opening one from Google Drive downloads it first, so it happens off the main thread.
+        if (uri.authority !in LOCAL_PROVIDERS) {
+            saveResume()
+            player.stop()
+            opening = true
+            changed()
+        }
+        opener.execute {
+            val pfd = try {
+                contentResolver.openFileDescriptor(uri, "r")
+            } catch (e: Exception) {
+                Log.w(TAG, "can't open ${item.uri}", e)
+                null
+            }
+            main.post {
+                if (token != openToken) {
+                    runCatching { pfd?.close() }
+                    return@post
+                }
+                opening = false
+                if (pfd == null) error(getString(R.string.cant_open, item.title))
+                else playMedia(item, Media(libVLC, pfd.fileDescriptor), pfd)
+            }
+        }
+    }
+
+    private fun playMedia(item: Item, media: Media, pfd: ParcelFileDescriptor?) {
+        oldFile = openFile
+        openFile = pfd
         media.setHWDecoderEnabled(true, false)
         player.media = media
         media.release()
@@ -249,20 +287,6 @@ class PlaybackService : Service() {
     }
 
     private var oldFile: ParcelFileDescriptor? = null
-
-    /** content:// addresses (what Android's file picker gives) are opened here and handed to libVLC as a file
-     * descriptor; files, folders' files and network addresses go to libVLC as they are. */
-    private fun makeMedia(item: Item): Media {
-        val uri = Uri.parse(item.uri)
-        return if (uri.scheme == "content") {
-            val pfd = contentResolver.openFileDescriptor(uri, "r") ?: throw IllegalStateException("no file")
-            oldFile = openFile
-            openFile = pfd
-            Media(libVLC, pfd.fileDescriptor)
-        } else {
-            Media(libVLC, uri)
-        }
-    }
 
     private fun closeOldFile() {
         runCatching { oldFile?.close() }
@@ -771,6 +795,11 @@ class PlaybackService : Service() {
         private const val TAG = "MediaPlayerSE"
         private const val CHANNEL = "playing"
         private const val NOTIFICATION_ID = 1
+        /** Content providers that open their files at once (the phone's own storage and Downloads). */
+        private val LOCAL_PROVIDERS = setOf(
+            "media", "com.android.externalstorage.documents", "com.android.providers.media.documents",
+            "com.android.providers.downloads.documents", "com.android.providers.downloads"
+        )
         const val ACTION_TOGGLE = "com.sauceedition.mediaplayer.TOGGLE"
         const val ACTION_NEXT = "com.sauceedition.mediaplayer.NEXT"
         const val ACTION_PREVIOUS = "com.sauceedition.mediaplayer.PREVIOUS"
