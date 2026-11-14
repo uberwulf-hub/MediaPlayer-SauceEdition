@@ -38,7 +38,7 @@
     <string name="subtitles">Subtitles</string>
     <string name="sound_track">Sound track</string>
     <string name="more">More</string>
-    <string name="nothing_recent">Nothing played yet.\nTap Files, Folder or Address to start.</string>
+    <string name="nothing_recent">Nothing played yet.\nTap Files, Folder, Drive or Suno to start, or look in Videos and Music.</string>
     <string name="allow_videos">Allow Media Player to see your videos to list them here.</string>
     <string name="allow_music">Allow Media Player to see your music to list it here.</string>
     <string name="allow">Allow</string>

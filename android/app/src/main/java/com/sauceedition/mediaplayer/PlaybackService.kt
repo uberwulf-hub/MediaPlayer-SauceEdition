@@ -84,7 +84,10 @@ class PlaybackService : MediaBrowserServiceCompat() {
         private set
     var buffering = false
         private set
-    val isPlaying: Boolean get() = player.isPlaying
+    /** Playing, or between two items or loops of one: libVLC reports "not playing" for those moments, but the
+     * buttons, the lock screen and the foreground service treat them as playing (stopping and restarting the
+     * foreground service with the screen off is refused, and then Android may stop the app). */
+    val isPlaying: Boolean get() = player.isPlaying || (shouldPlay && !ended)
     val current: Item? get() = playlist.current
     val timeMs: Long get() = player.time.coerceAtLeast(0)
     val lengthMs: Long get() = player.length.coerceAtLeast(0)
@@ -417,12 +420,12 @@ class PlaybackService : MediaBrowserServiceCompat() {
     }
 
     fun pause() {
-        if (player.isPlaying) player.pause()
+        if (player.isPlaying) player.pause() else if (opening) pauseWhenStarted = true
         shouldPlay = false
         saveResume()
     }
 
-    fun togglePlay() = if (player.isPlaying) pause() else play()
+    fun togglePlay() = if (isPlaying) pause() else play()
 
     fun stopPlaying() {
         saveResume()
@@ -468,7 +471,7 @@ class PlaybackService : MediaBrowserServiceCompat() {
             // libVLC is repeating this file by itself (loop one): to stop repeating it has to be opened again,
             // carrying on from the same moment
             if (repeating && v != Loop.ONE && c != null && !ended) {
-                val wasPlaying = player.isPlaying
+                val wasPlaying = isPlaying
                 restartAt = timeMs
                 startItem(c)
                 if (!wasPlaying) pauseWhenStarted = true
@@ -752,7 +755,7 @@ class PlaybackService : MediaBrowserServiceCompat() {
     private val focusListener = AudioManager.OnAudioFocusChangeListener { change ->
         when (change) {
             AudioManager.AUDIOFOCUS_LOSS -> { resumeOnGain = false; pause(); abandonFocus() }
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> { resumeOnGain = player.isPlaying; pause() }
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> { resumeOnGain = isPlaying; pause() }
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> player.volume = 30
             AudioManager.AUDIOFOCUS_GAIN -> {
                 player.volume = 100
@@ -823,7 +826,7 @@ class PlaybackService : MediaBrowserServiceCompat() {
     private var sessionLength = 0L
 
     private fun updateSession() {
-        val playing = player.isPlaying
+        val playing = isPlaying
         val actions = PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_PAUSE or
             PlaybackStateCompat.ACTION_PLAY_PAUSE or PlaybackStateCompat.ACTION_STOP or
             PlaybackStateCompat.ACTION_SKIP_TO_NEXT or PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
@@ -863,7 +866,7 @@ class PlaybackService : MediaBrowserServiceCompat() {
     )
 
     private fun buildNotification(): Notification {
-        val playing = player.isPlaying
+        val playing = isPlaying
         return NotificationCompat.Builder(this, CHANNEL)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
@@ -900,7 +903,7 @@ class PlaybackService : MediaBrowserServiceCompat() {
             stopForegroundNow(true)
             return
         }
-        val playing = player.isPlaying
+        val playing = isPlaying
         // A paused video with the app open needs no notification; music, or anything left playing, gets one.
         if (!playing && !foreground) {
             if (bound || browsed) return
@@ -950,7 +953,7 @@ class PlaybackService : MediaBrowserServiceCompat() {
     }
 
     private fun stopIfIdle() {
-        if (!bound && !browsed && !player.isPlaying) {
+        if (!bound && !browsed && !isPlaying) {
             stopForegroundNow(true)
             stopSelf()
         }
