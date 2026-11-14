@@ -4,6 +4,12 @@ What changes in each version, in plain words. Newest first.
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-11-14
+
+### Fixed
+
+- Android: the player's buttons (loop, previous, back, play, forward, next, mix up) all fit on narrower phones such as the Galaxy S23; loop and mix up were cut off at the edges.
+
 ## [0.3.0] - 2026-11-14
 
 ### Added

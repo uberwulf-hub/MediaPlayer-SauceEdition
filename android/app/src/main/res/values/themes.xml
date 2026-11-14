@@ -31,6 +31,12 @@
         <item name="android:background">?attr/selectableItemBackgroundBorderless</item>
         <item name="tint">@android:color/white</item>
     </style>
+    <!-- the buttons beside play/pause share the screen's width, so all seven fit on narrow phones -->
+    <style name="RowButton" parent="PlayerButton">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:padding">10dp</item>
+    </style>
     <style name="Chip">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">36dp</item>
