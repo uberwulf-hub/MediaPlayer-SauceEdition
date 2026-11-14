@@ -48,7 +48,8 @@ namespace MediaPlayerSauce.Engine
         /// <summary>The engine was rebuilt (a new MediaPlayer): the window must give it to its video view again.</summary>
         public event Action Rebuilt;
 
-        static bool coreReady, makeCache;
+        static bool coreReady;
+        static volatile bool makeCache;
         /// <summary>Loads libVLC from libvlc\win-x64 next to the program (once).</summary>
         public static void InitCore()
         {
@@ -57,6 +58,25 @@ namespace MediaPlayerSauce.Engine
             if (Directory.Exists(dir)) LibVLCSharp.Shared.Core.Initialize(dir); else LibVLCSharp.Shared.Core.Initialize();
             makeCache = Directory.Exists(dir) && PluginCacheStale(Path.Combine(dir, "plugins"));
             coreReady = true;
+        }
+
+        /// <summary>True on the first start after an update (or ever): libVLC's plugin cache has to be made, which opens
+        /// all its plugin files and can take half a minute while Windows Defender checks them.</summary>
+        public static bool CacheNeedsBuilding { get { InitCore(); return makeCache; } }
+
+        /// <summary>Makes the plugin cache with a throw-away engine, on any thread, so the start-up can show a "getting
+        /// ready" window meanwhile and the window's own engine then starts quickly. False if libVLC couldn't start
+        /// (the window's engine then reports it as usual).</summary>
+        public static bool BuildPluginCache()
+        {
+            InitCore();
+            makeCache = false;
+            try
+            {
+                using var lib = new LibVLC(false, "--quiet", "--no-media-library", "--reset-plugins-cache");
+                return true;
+            }
+            catch (Exception) { return false; }
         }
 
         /// <summary>

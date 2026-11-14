@@ -4,6 +4,12 @@ What changes in each version, in plain words. Newest first.
 
 ## [Unreleased]
 
+## [0.4.1] - 2026-11-14
+
+### Fixed
+
+- Windows: the first start after an update no longer looks like nothing is happening for half a minute. A small "Getting Media Player ready" window shows straight away while the playback engine makes its list of parts (once per update), then the player opens.
+
 ## [0.4.0] - 2026-11-14
 
 ### Added

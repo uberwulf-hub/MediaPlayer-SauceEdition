@@ -20,6 +20,15 @@ namespace MediaPlayerSE.Tests
             Check("engine: the first start writes libVLC's plugin cache, so later starts don't open every plugin",
                 File.Exists(Path.Combine(plugins, "plugins.dat")) && !Player.PluginCacheStale(plugins));
 
+            // after an update the start-up makes the cache on a background thread (with a "getting ready" window)
+            File.Delete(Path.Combine(plugins, "plugins.dat"));
+            bool built = false;
+            var builder = new Thread(() => built = Player.BuildPluginCache());
+            builder.Start();
+            bool finished = builder.Join(TimeSpan.FromMinutes(3));
+            Check("engine: the plugin cache can be made off the window's thread (the first start after an update)",
+                finished && built && File.Exists(Path.Combine(plugins, "plugins.dat")) && !Player.PluginCacheStale(plugins));
+
             string pc = Dir("plugin-cache");
             File.WriteAllText(Path.Combine(pc, "a.dll"), "x");
             bool missing = Player.PluginCacheStale(pc);

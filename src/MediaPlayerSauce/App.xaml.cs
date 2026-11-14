@@ -52,20 +52,64 @@ namespace MediaPlayerSauce
                 settings.ImportedOld = true;
                 try { settings.Save(); } catch (Exception ex) { Log("settings", ex); }
             }
-            try { main = new MainWindow(settings, false); }
-            catch (Exception ex)
+            void Start()
             {
-                Log("start", ex);
-                MessageBox.Show("Media Player couldn't start: " + ex.Message, "Media Player", MessageBoxButton.OK, MessageBoxImage.Error);
-                Shutdown(1);
-                return;
+                try { main = new MainWindow(settings, false); }
+                catch (Exception ex)
+                {
+                    Log("start", ex);
+                    MessageBox.Show("Media Player couldn't start: " + ex.Message, "Media Player", MessageBoxButton.OK, MessageBoxImage.Error);
+                    Shutdown(1);
+                    return;
+                }
+                MainWindow = main;
+                main.Show();
+                StartPipeServer();
+                var files = args.Where(a => !a.StartsWith("--")).ToList();
+                if (files.Count > 0) main.OpenPaths(files, !enqueue);
+                if (showOnline) main.ShowOnline(source, online);
             }
-            MainWindow = main;
-            main.Show();
-            StartPipeServer();
-            var files = args.Where(a => !a.StartsWith("--")).ToList();
-            if (files.Count > 0) main.OpenPaths(files, !enqueue);
-            if (showOnline) main.ShowOnline(source, online);
+
+            // The first start after an update makes libVLC's plugin cache: half a minute while Windows Defender checks
+            // its 320 files. Show that something is happening, and do it off the window's thread.
+            if (Engine.Player.CacheNeedsBuilding) GetReady(Start);
+            else Start();
+        }
+
+        /// <summary>A small "getting ready" window while the plugin cache is made in the background, then start.</summary>
+        void GetReady(Action start)
+        {
+            ShutdownMode = ShutdownMode.OnExplicitShutdown; // closing this window mustn't end the program
+            var bar = new System.Windows.Controls.ProgressBar { IsIndeterminate = true, Height = 6, Margin = new Thickness(0, 16, 0, 0) };
+            var text = new System.Windows.Controls.TextBlock
+            {
+                Text = "Getting Media Player ready after an update…\nThis takes a moment, just this once.",
+                Foreground = System.Windows.Media.Brushes.WhiteSmoke,
+                FontSize = 15,
+                TextWrapping = TextWrapping.Wrap,
+            };
+            var panel = new System.Windows.Controls.StackPanel { Margin = new Thickness(24) };
+            panel.Children.Add(text);
+            panel.Children.Add(bar);
+            var w = new Window
+            {
+                Title = "Media Player",
+                Width = 420,
+                SizeToContent = SizeToContent.Height,
+                ResizeMode = ResizeMode.NoResize,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(0x12, 0x12, 0x14)),
+                Content = panel,
+                ShowInTaskbar = true,
+            };
+            try { w.Icon = System.Windows.Media.Imaging.BitmapFrame.Create(new Uri("pack://application:,,,/MediaPlayer.ico")); } catch (Exception) { }
+            w.Show();
+            Task.Run(Engine.Player.BuildPluginCache).ContinueWith(_ => Dispatcher.BeginInvoke(new Action(() =>
+            {
+                start();
+                ShutdownMode = ShutdownMode.OnMainWindowClose;
+                w.Close();
+            })));
         }
 
         static string Take(List<string> args, string name)

@@ -11,7 +11,7 @@
     <RootNamespace>MediaPlayerSauce</RootNamespace>
     <ApplicationIcon>MediaPlayer.ico</ApplicationIcon>
     <Product>Media Player (Sauce Edition)</Product>
-    <Version>0.4.0</Version>
+    <Version>0.4.1</Version>
     <Platforms>x64</Platforms>
     <PlatformTarget>x64</PlatformTarget>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
