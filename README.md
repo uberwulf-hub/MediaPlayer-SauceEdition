@@ -52,6 +52,13 @@ The Android app (`android\`, Android 7.0 and newer) plays with libVLC too, so th
   (headphone buttons work too); it pauses for calls and when headphones come out. A video pauses when the app is
   left, or (if More > Keep playing as sound is ticked) carries on as sound only.
 
+- **Android Auto** (a car's screen, like the Kia Sorento's): Media Player shows up as a music app with **Recent** and
+  **Songs** to browse, the usual playback controls, and "Hey Google, play <song or artist> on Media Player". Android
+  Auto only lists apps from the Play Store unless it's told otherwise, so once on the phone: open Android Auto's
+  settings, tap **Version** ten times (yes to developer settings), then ⋮ > **Developer settings** > tick **Unknown
+  sources**; then in **Customize launcher**, tick Media Player. `CarLibrary.kt` is what the car browses;
+  `CarBrowseTest` (in `app/src/androidTest`) connects the way the car does and plays a song.
+
 Not possible: Amazon Music (its songs are copy-protected and only play in Amazon's app). Not on Android yet: the
 equalizer and effects, converting, discs, Watch online's Edge windows and App Hub's old settings.
 

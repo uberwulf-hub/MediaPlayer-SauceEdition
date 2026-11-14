@@ -21,6 +21,10 @@
     <string name="tab_recent">Recent</string>
     <string name="tab_videos">Videos</string>
     <string name="tab_music">Music</string>
+    <string name="car_songs">Songs</string>
+    <string name="no_songs_match">No songs on this phone match that.</string>
+    <string name="car_no_songs">No songs yet</string>
+    <string name="car_no_songs_detail">On your phone, open Media Player, tap Music and Allow</string>
     <string name="play">Play</string>
     <string name="pause">Pause</string>
     <string name="next">Next</string>

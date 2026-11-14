@@ -7,7 +7,6 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -19,11 +18,14 @@ import android.media.AudioManager
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Binder
+import android.os.Bundle
+import android.os.Process
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.os.ParcelFileDescriptor
+import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
@@ -34,6 +36,7 @@ import androidx.core.content.ContextCompat
 import androidx.media.AudioAttributesCompat
 import androidx.media.AudioFocusRequestCompat
 import androidx.media.AudioManagerCompat
+import androidx.media.MediaBrowserServiceCompat
 import org.videolan.libvlc.LibVLC
 import org.videolan.libvlc.Media
 import org.videolan.libvlc.MediaPlayer
@@ -42,7 +45,7 @@ import org.videolan.libvlc.util.VLCVideoLayout
 import java.io.File
 import java.util.concurrent.Executors
 
-class PlaybackService : Service() {
+class PlaybackService : MediaBrowserServiceCompat() {
 
     interface Listener {
         /** Playing, paused, a new item, a new list, the picture appearing: redraw everything. */
@@ -68,6 +71,8 @@ class PlaybackService : Service() {
     private var pendingSeek = 0L
     private var foreground = false
     private var bound = false
+    /** Android Auto (or another media browser) is connected. */
+    private var browsed = false
     private var hiddenVideoTrack = Int.MIN_VALUE
     private var artwork: Bitmap? = null
     private var artworkFor: String? = null
@@ -96,7 +101,9 @@ class PlaybackService : Service() {
 
         session = MediaSessionCompat(this, "MediaPlayerSE").apply {
             setCallback(object : MediaSessionCompat.Callback() {
-                override fun onPlay() = play()
+                override fun onPlay() = if (current == null) playFromSearch("") else play()
+                override fun onPlayFromMediaId(mediaId: String?, extras: Bundle?) = playFromMediaId(mediaId ?: "")
+                override fun onPlayFromSearch(query: String?, extras: Bundle?) = playFromSearch(query ?: "")
                 override fun onPause() = pause()
                 override fun onSkipToNext() = next()
                 override fun onSkipToPrevious() = previous()
@@ -107,6 +114,8 @@ class PlaybackService : Service() {
             })
             setSessionActivity(openPlayerIntent())
         }
+        // Android Auto (and other media browsers) control playback through this session
+        sessionToken = session.sessionToken
 
         if (Build.VERSION.SDK_INT >= 26) {
             val channel = NotificationChannel(CHANNEL, getString(R.string.channel_playing), NotificationManager.IMPORTANCE_LOW)
@@ -115,20 +124,87 @@ class PlaybackService : Service() {
         }
     }
 
-    // Android calls onBind once for the first screen to bind and onUnbind once when the last one lets go.
-    override fun onBind(intent: Intent?): IBinder {
+    // Android calls onBind once for the first screen to bind and onUnbind once when the last one lets go. Android
+    // Auto binds separately, as a media browser (with MediaBrowserService's action).
+    override fun onBind(intent: Intent?): IBinder? {
+        if (intent?.action == SERVICE_INTERFACE) {
+            browsed = true
+            return super.onBind(intent)
+        }
         bound = true
         return binder
     }
 
     override fun onRebind(intent: Intent?) {
-        bound = true
+        if (intent?.action == SERVICE_INTERFACE) browsed = true else bound = true
     }
 
     override fun onUnbind(intent: Intent?): Boolean {
-        bound = false
+        if (intent?.action == SERVICE_INTERFACE) browsed = false else bound = false
         stopIfIdle()
         return true
+    }
+
+    // ---- Android Auto: what the car's screen can browse, and playing from it or by voice
+
+    override fun onGetRoot(clientPackageName: String, clientUid: Int, rootHints: Bundle?): BrowserRoot? {
+        // this app, the system, and the car and assistant apps; others don't get the music list
+        val ok = clientUid == Process.myUid() || clientUid == Process.SYSTEM_UID || clientPackageName in BROWSERS
+        return if (ok) BrowserRoot(CarLibrary.ROOT, null) else null
+    }
+
+    override fun onLoadChildren(parentId: String, result: Result<MutableList<MediaBrowserCompat.MediaItem>>) {
+        result.detach()
+        opener.execute {
+            val items = runCatching { CarLibrary.children(this, parentId) }.getOrDefault(emptyList())
+            main.post { result.sendResult(items.toMutableList()) }
+        }
+    }
+
+    override fun onSearch(query: String, extras: Bundle?, result: Result<MutableList<MediaBrowserCompat.MediaItem>>) {
+        result.detach()
+        opener.execute {
+            val items = runCatching { CarLibrary.search(this, query) }.getOrDefault(emptyList())
+            main.post { result.sendResult(items.map { CarLibrary.playable(it, CarLibrary.SEARCH + query) }.toMutableList()) }
+        }
+    }
+
+    private fun playFromMediaId(mediaId: String) {
+        opener.execute {
+            val (list, index) = runCatching { CarLibrary.listFor(this, mediaId) }.getOrDefault(emptyList<Item>() to -1)
+            main.post { if (index >= 0) { keepRunning(); playList(list, index) } }
+        }
+    }
+
+    /** "Play <song or artist> on Media Player"; an empty search carries on, or plays all the songs. */
+    fun playFromSearch(query: String, done: (Boolean) -> Unit = {}) {
+        if (query.isBlank() && current != null) {
+            keepRunning()
+            play()
+            done(true)
+            return
+        }
+        opener.execute {
+            val list = runCatching { CarLibrary.search(this, query) }.getOrDefault(emptyList())
+            main.post {
+                if (list.isNotEmpty()) {
+                    keepRunning()
+                    playList(list, 0)
+                }
+                done(list.isNotEmpty())
+            }
+        }
+    }
+
+    /** Started (not only bound), so the music carries on when the car lets go of the app. */
+    private fun keepRunning() {
+        val i = Intent(this, PlaybackService::class.java).setAction(ACTION_FOREGROUND)
+        try {
+            ContextCompat.startForegroundService(this, i)
+        } catch (e: Exception) {
+            Log.w(TAG, "can't start in the foreground", e)
+            runCatching { startService(i) }
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -137,6 +213,20 @@ class PlaybackService : Service() {
             ACTION_NEXT -> next()
             ACTION_PREVIOUS -> previous()
             ACTION_DISMISS -> { if (!isPlaying) stopPlaying() }
+            // startForegroundService needs startForeground within seconds, whatever happens next
+            ACTION_FOREGROUND -> if (!foreground) {
+                try {
+                    ServiceCompat.startForeground(
+                        this, NOTIFICATION_ID, buildNotification(),
+                        if (Build.VERSION.SDK_INT >= 29) ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK else 0
+                    )
+                    foreground = true
+                    postedKey = null
+                } catch (e: Exception) {
+                    Log.w(TAG, "startForeground refused", e)
+                }
+                if (!isPlaying && !opening) main.postDelayed({ updateNotification() }, 3000)
+            }
         }
         return START_NOT_STICKY
     }
@@ -663,6 +753,7 @@ class PlaybackService : Service() {
         val actions = PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_PAUSE or
             PlaybackStateCompat.ACTION_PLAY_PAUSE or PlaybackStateCompat.ACTION_STOP or
             PlaybackStateCompat.ACTION_SKIP_TO_NEXT or PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
+            PlaybackStateCompat.ACTION_PLAY_FROM_MEDIA_ID or PlaybackStateCompat.ACTION_PLAY_FROM_SEARCH or
             (if (player.isSeekable) PlaybackStateCompat.ACTION_SEEK_TO or PlaybackStateCompat.ACTION_FAST_FORWARD or PlaybackStateCompat.ACTION_REWIND else 0L)
         val state = when {
             current == null -> PlaybackStateCompat.STATE_NONE
@@ -738,7 +829,7 @@ class PlaybackService : Service() {
         val playing = player.isPlaying
         // A paused video with the app open needs no notification; music, or anything left playing, gets one.
         if (!playing && !foreground) {
-            if (bound) return
+            if (bound || browsed) return
         }
         val key = listOf(current?.uri, title, artist, playing, artworkBitmap()?.hashCode())
         if (key == postedKey && (playing == foreground)) return
@@ -785,7 +876,7 @@ class PlaybackService : Service() {
     }
 
     private fun stopIfIdle() {
-        if (!bound && !player.isPlaying) {
+        if (!bound && !browsed && !player.isPlaying) {
             stopForegroundNow(true)
             stopSelf()
         }
@@ -799,6 +890,13 @@ class PlaybackService : Service() {
         private val LOCAL_PROVIDERS = setOf(
             "media", "com.android.externalstorage.documents", "com.android.providers.media.documents",
             "com.android.providers.downloads.documents", "com.android.providers.downloads"
+        )
+        const val ACTION_FOREGROUND = "com.sauceedition.mediaplayer.FOREGROUND"
+        /** Android Auto, Android Automotive, Google Assistant and the system's media controls. */
+        private val BROWSERS = setOf(
+            "com.google.android.projection.gearhead", "com.google.android.carassistant",
+            "com.google.android.googlequicksearchbox", "com.android.car.media", "com.google.android.car.media",
+            "com.android.systemui", "com.google.android.wearable.app"
         )
         const val ACTION_TOGGLE = "com.sauceedition.mediaplayer.TOGGLE"
         const val ACTION_NEXT = "com.sauceedition.mediaplayer.NEXT"

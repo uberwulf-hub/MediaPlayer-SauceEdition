@@ -9,6 +9,8 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.app.SearchManager
+import android.provider.MediaStore
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
@@ -60,6 +62,8 @@ class PlayerActivity : AppCompatActivity(), PlaybackService.Listener {
     private var opening: List<Item>? = null
     /** A shared Suno link is being looked up: stay open even though nothing plays yet. */
     private var waitingForLink = false
+    /** "Play <song> on Media Player": what to look for once the player is connected. */
+    private var searching: String? = null
     private var seeking = false
     private var controlsShown = true
     private val handler = Handler(Looper.getMainLooper())
@@ -74,6 +78,16 @@ class PlayerActivity : AppCompatActivity(), PlaybackService.Listener {
             s.player.videoScale = SCALES[prefs.scale.coerceIn(SCALES.indices)]
             opening?.let { s.playList(it, 0) }
             opening = null
+            searching?.let { query ->
+                searching = null
+                s.playFromSearch(query) { found ->
+                    waitingForLink = false
+                    if (!found) {
+                        Toast.makeText(this@PlayerActivity, R.string.no_songs_match, Toast.LENGTH_LONG).show()
+                        if (s.current == null) finish()
+                    }
+                }
+            }
             if (s.current == null && !waitingForLink) {
                 finish()
                 return
@@ -182,7 +196,19 @@ class PlayerActivity : AppCompatActivity(), PlaybackService.Listener {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        val items = itemsFrom(intent) ?: return
+        val items = itemsFrom(intent)
+        if (items == null) {
+            val q = searching
+            val s = service
+            if (q != null && s != null) {
+                searching = null
+                s.playFromSearch(q) { found ->
+                    waitingForLink = false
+                    if (!found) Toast.makeText(this, R.string.no_songs_match, Toast.LENGTH_LONG).show()
+                }
+            }
+            return
+        }
         val s = service
         if (s != null) {
             startService(Intent(this, PlaybackService::class.java))
@@ -192,6 +218,12 @@ class PlayerActivity : AppCompatActivity(), PlaybackService.Listener {
 
     /** What another app opened with or shared to Media Player: a file, or an address. */
     private fun itemsFrom(intent: Intent?): List<Item>? {
+        if (intent?.action == MediaStore.INTENT_ACTION_MEDIA_PLAY_FROM_SEARCH) {
+            searching = intent.getStringExtra(SearchManager.QUERY).orEmpty()
+            waitingForLink = true
+            setIntent(Intent(this, PlayerActivity::class.java))
+            return null
+        }
         val uris = when (intent?.action) {
             Intent.ACTION_VIEW -> listOfNotNull(intent.data)
             Intent.ACTION_SEND -> listOfNotNull(
@@ -224,7 +256,7 @@ class PlayerActivity : AppCompatActivity(), PlaybackService.Listener {
     override fun onStart() {
         super.onStart()
         // started as well as bound, so music carries on when this screen closes
-        if (opening != null) startService(Intent(this, PlaybackService::class.java))
+        if (opening != null || searching != null) startService(Intent(this, PlaybackService::class.java))
         bound = bindService(Intent(this, PlaybackService::class.java), connection, Context.BIND_AUTO_CREATE)
     }
 

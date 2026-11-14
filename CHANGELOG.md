@@ -9,6 +9,7 @@ What changes in each version, in plain words. Newest first.
 ### Added
 
 - Android: a Drive button picks songs and videos from Google Drive (Android's file picker, with a tip the first time on where Drive is).
+- Android Auto: Media Player is a music app on the car's screen (Recent, Songs, playback controls, and "play <song> on Media Player"). As it isn't from the Play Store, Android Auto needs Unknown sources turned on once in its developer settings.
 - Android: a Suno button explains saving Suno songs to the phone (they then show in Music), opens the Suno app, and plays Suno links when Suno allows it; sharing a Suno link to Media Player works too. The web and radio link box moved to the ⋮ menu.
 
 ### Fixed

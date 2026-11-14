@@ -85,6 +85,12 @@
                 <data android:scheme="udp" />
             </intent-filter>
 
+            <!-- "Play <song> on Media Player" (Google Assistant, Android Auto) -->
+            <intent-filter>
+                <action android:name="android.media.action.MEDIA_PLAY_FROM_SEARCH" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+
             <!-- Share to Media Player -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
@@ -101,9 +107,21 @@
             </intent-filter>
         </activity>
 
+        <!-- also Android Auto's way in: it browses Recent and Songs and controls playback (see CarLibrary) -->
         <service
             android:name=".PlaybackService"
-            android:exported="false"
-            android:foregroundServiceType="mediaPlayback" />
+            android:exported="true"
+            android:foregroundServiceType="mediaPlayback">
+            <intent-filter>
+                <action android:name="android.media.browse.MediaBrowserService" />
+            </intent-filter>
+        </service>
+
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
+        <meta-data
+            android:name="com.google.android.gms.car.notification.SmallIcon"
+            android:resource="@drawable/ic_notification" />
     </application>
 </manifest>
