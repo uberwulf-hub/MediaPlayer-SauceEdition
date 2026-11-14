@@ -24,6 +24,7 @@ namespace MediaPlayerSauce
             // only ever the real program: a test that makes an Application of this class must not start the player
             if (System.Reflection.Assembly.GetEntryAssembly()?.GetName().Name != "MediaPlayerSE") return;
             DarkTitle.ForAllWindows();
+            SliderDrag.Register();
             var args = e.Args.ToList();
             string snapshot = Take(args, "--snapshot");
             string scene = Take(args, "--scene") ?? "Welcome";

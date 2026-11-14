@@ -27,6 +27,16 @@ class Prefs(context: Context) {
         get() = sp.getBoolean("videoInBackground", false)
         set(v) = sp.edit().putBoolean("videoInBackground", v).apply()
 
+    /** Leave WhatsApp's videos and songs out of the Videos and Music lists (on unless switched off). */
+    var hideChatApps: Boolean
+        get() = sp.getBoolean("hideChatApps", true)
+        set(v) = sp.edit().putBoolean("hideChatApps", v).apply()
+
+    /** The "keep playing with the screen off" question has been offered once. */
+    var batteryAsked: Boolean
+        get() = sp.getBoolean("batteryAsked", false)
+        set(v) = sp.edit().putBoolean("batteryAsked", v).apply()
+
     /** The "where Drive is in the picker" tip has been shown. */
     var driveTipShown: Boolean
         get() = sp.getBoolean("driveTipShown", false)

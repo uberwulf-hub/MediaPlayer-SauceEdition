@@ -7,6 +7,10 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- radio and streams keep Wi-Fi on with the screen off -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <!-- to ask (once, and from the menu) to keep playing with the screen off without battery limits -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <!-- media notifications are allowed without asking, but Android wants it listed -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!-- the Videos and Music lists (asked for only when one is opened) -->
