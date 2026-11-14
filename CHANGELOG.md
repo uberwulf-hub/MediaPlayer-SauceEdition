@@ -4,7 +4,7 @@ What changes in each version, in plain words. Newest first.
 
 ## [Unreleased]
 
-## [0.3.0] - (the day it's released)
+## [0.3.0] - 2026-11-14
 
 ### Added
 
