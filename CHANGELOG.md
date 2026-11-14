@@ -4,6 +4,13 @@ What changes in each version, in plain words. Newest first.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-14
+
+### Added
+
+- Media Player for Android: the same playback engine as on Windows, so nearly any video, music file or stream plays. Open files, a whole folder or an address, or pick from the phone's Videos and Music; Open with and Share from other apps.
+- On Android: carries on where you left off, music keeps playing with the screen off (with a notification and lock-screen controls), and the player has subtitles, sound tracks, speeds, picture sizes, loop, mix up and a playlist.
+
 ## [0.2.1] - 2026-11-10
 
 ### Fixed

@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/background">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:gravity="center_vertical"
+        android:paddingStart="16dp"
+        android:paddingEnd="4dp">
+        <ImageView
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@mipmap/ic_launcher"
+            android:importantForAccessibility="no" />
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="12dp"
+            android:text="@string/app_name"
+            android:textColor="@color/text"
+            android:textSize="21sp"
+            android:textStyle="bold" />
+        <ImageButton
+            android:id="@+id/menu"
+            style="@style/PlayerButton"
+            android:src="@drawable/ic_more"
+            android:contentDescription="@string/more" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp">
+        <TextView
+            android:id="@+id/openFiles"
+            style="@style/OpenButton"
+            android:text="@string/open_files"
+            app:drawableTopCompat="@drawable/ic_file" />
+        <TextView
+            android:id="@+id/openFolder"
+            style="@style/OpenButton"
+            android:text="@string/open_folder"
+            app:drawableTopCompat="@drawable/ic_folder" />
+        <TextView
+            android:id="@+id/openAddress"
+            style="@style/OpenButton"
+            android:text="@string/open_address"
+            app:drawableTopCompat="@drawable/ic_link" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="16dp"
+        android:paddingTop="12dp"
+        android:paddingEnd="16dp"
+        android:paddingBottom="8dp">
+        <TextView android:id="@+id/tabRecent" style="@style/Chip" android:text="@string/tab_recent" />
+        <TextView android:id="@+id/tabVideos" style="@style/Chip" android:text="@string/tab_videos" />
+        <TextView android:id="@+id/tabMusic" style="@style/Chip" android:text="@string/tab_music" />
+    </LinearLayout>
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/list"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingBottom="8dp" />
+        <LinearLayout
+            android:id="@+id/empty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="32dp"
+            android:visibility="gone">
+            <TextView
+                android:id="@+id/emptyText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:textColor="@color/text_dim"
+                android:textSize="16sp" />
+            <Button
+                android:id="@+id/allow"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="@string/allow"
+                android:visibility="gone" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/nowPlaying"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:layout_margin="8dp"
+        android:background="@drawable/card"
+        android:gravity="center_vertical"
+        android:paddingStart="12dp"
+        android:paddingEnd="4dp"
+        android:visibility="gone">
+        <ImageView
+            android:id="@+id/nowIcon"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:padding="6dp"
+            android:src="@drawable/ic_music"
+            android:importantForAccessibility="no"
+            app:tint="@color/accent" />
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="10dp"
+            android:orientation="vertical">
+            <TextView
+                android:id="@+id/nowTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/text"
+                android:textSize="15sp" />
+            <TextView
+                android:id="@+id/nowDetail"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textColor="@color/text_dim"
+                android:textSize="13sp" />
+        </LinearLayout>
+        <ImageButton
+            android:id="@+id/nowPlay"
+            style="@style/PlayerButton"
+            android:src="@drawable/ic_play"
+            android:contentDescription="@string/play" />
+        <ImageButton
+            android:id="@+id/nowNext"
+            style="@style/PlayerButton"
+            android:src="@drawable/ic_next"
+            android:contentDescription="@string/next" />
+    </LinearLayout>
+</LinearLayout>

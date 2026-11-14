@@ -1,0 +1,73 @@
+<resources>
+    <string name="app_name">Media Player</string>
+    <string name="channel_playing">Playing</string>
+    <string name="open_files">Files</string>
+    <string name="open_folder">Folder</string>
+    <string name="open_address">Address</string>
+    <string name="tab_recent">Recent</string>
+    <string name="tab_videos">Videos</string>
+    <string name="tab_music">Music</string>
+    <string name="play">Play</string>
+    <string name="pause">Pause</string>
+    <string name="next">Next</string>
+    <string name="previous">Previous</string>
+    <string name="back">Back</string>
+    <string name="rewind">Back 10 seconds</string>
+    <string name="forward">Forward 10 seconds</string>
+    <string name="loop">Loop</string>
+    <string name="shuffle">Mix up</string>
+    <string name="playlist">Playlist</string>
+    <string name="subtitles">Subtitles</string>
+    <string name="sound_track">Sound track</string>
+    <string name="more">More</string>
+    <string name="nothing_recent">Nothing played yet.\nTap Files, Folder or Address to start.</string>
+    <string name="allow_videos">Allow Media Player to see your videos to list them here.</string>
+    <string name="allow_music">Allow Media Player to see your music to list it here.</string>
+    <string name="allow">Allow</string>
+    <string name="no_videos">No videos on this phone.</string>
+    <string name="no_music">No music on this phone.</string>
+    <string name="loading">Looking…</string>
+    <string name="address_title">Open an address</string>
+    <string name="address_hint">https://… (a video, music, radio or YouTube address)</string>
+    <string name="address_bad">That doesn\'t look like an address.</string>
+    <string name="open">Open</string>
+    <string name="cancel">Cancel</string>
+    <string name="close">Close</string>
+    <string name="cant_open">Can\'t open %1$s.</string>
+    <string name="cant_play">Can\'t play %1$s.</string>
+    <string name="no_media_in_folder">No videos or music in that folder.</string>
+    <string name="remove_recent">Remove from Recent</string>
+    <string name="clear_recent">Clear Recent</string>
+    <string name="preferences">Keep playing videos as sound when I leave the app</string>
+    <string name="about">About</string>
+    <string name="about_text">Media Player (Sauce Edition) %1$s\n\nPlays with libVLC, the playback engine of the VLC media player (LGPL-2.1-or-later), by VideoLAN and the VLC authors. Media Player (Sauce Edition) isn\'t made by or affiliated with VideoLAN; VLC is a trademark of VideoLAN.\n\nNo ads, no tracking.</string>
+    <string name="speed">Speed</string>
+    <string name="picture_size">Picture size</string>
+    <string name="add_subtitles">Add a subtitle file</string>
+    <string name="media_info">Media information</string>
+    <string name="video_in_background">Keep playing as sound in the background</string>
+    <string name="add_to_playlist">Add files</string>
+    <string name="remove_from_playlist">Remove %1$s from the playlist?</string>
+    <string name="remove">Remove</string>
+    <string name="no_tracks">None in this file.</string>
+    <string name="subtitles_added">Subtitles added.</string>
+    <string name="cant_add_subtitles">Can\'t use that subtitle file.</string>
+    <string name="left_at">Left at %1$s</string>
+    <string name="loop_off">Loop off</string>
+    <string name="loop_all">Looping the playlist</string>
+    <string name="loop_one">Looping this one</string>
+    <string name="shuffle_on">Mixed up</string>
+    <string name="shuffle_off">In order</string>
+    <string name="info_title">Title</string>
+    <string name="info_artist">Artist</string>
+    <string name="info_album">Album</string>
+    <string name="info_length">Length</string>
+    <string name="info_address">Address</string>
+    <string-array name="picture_sizes">
+        <item>Best fit</item>
+        <item>Fill the screen</item>
+        <item>16:9</item>
+        <item>4:3</item>
+        <item>Original size</item>
+    </string-array>
+</resources>
