@@ -367,6 +367,7 @@ class PlayerActivity : AppCompatActivity(), PlaybackService.Listener {
     private fun cycleLoop() {
         val s = service ?: return
         s.loop = when (s.loop) { Loop.OFF -> Loop.ALL; Loop.ALL -> Loop.ONE; Loop.ONE -> Loop.OFF }
+        if (s.loop == Loop.ONE) Battery.offerOnce(this)
         showOsd(getString(when (s.loop) { Loop.OFF -> R.string.loop_off; Loop.ALL -> R.string.loop_all; Loop.ONE -> R.string.loop_one }))
     }
 

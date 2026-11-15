@@ -13,8 +13,9 @@ import android.provider.MediaStore
 import android.provider.OpenableColumns
 import androidx.core.content.ContextCompat
 
-/** A row in the Videos or Music list: the item, and a line under its name (length, artist). */
-data class Entry(val item: Item, val detail: String, val isVideo: Boolean)
+/** A row in the Videos or Music list: the item, a line under its name (length, artist), and the address Android
+ * can make a thumbnail of (the video itself, or the song for its album cover). */
+data class Entry(val item: Item, val detail: String, val isVideo: Boolean, val thumbnail: android.net.Uri? = null)
 
 object DeviceMedia {
 
@@ -31,39 +32,51 @@ object DeviceMedia {
     fun musicEntries(context: Context): List<Entry> =
         if (allowed(context, musicPermission())) music(context) else emptyList()
 
-    /** Every video, newest first. */
-    fun videos(context: Context): List<Entry> {
+    /** Folders that hold what chat apps saved (WhatsApp's received and sent videos and songs), for hiding them. */
+    fun isFromChatApp(folder: String?): Boolean {
+        val f = folder?.lowercase(java.util.Locale.ROOT) ?: return false
+        return f.contains("whatsapp") || f.contains("com.whatsapp")
+    }
+
+    /** The folder a row is in: RELATIVE_PATH on Android 10+, else the file's full path. */
+    @Suppress("DEPRECATION")
+    private val folderColumn = if (Build.VERSION.SDK_INT >= 29) MediaStore.MediaColumns.RELATIVE_PATH else MediaStore.MediaColumns.DATA
+
+    /** Every video, newest first (WhatsApp's left out when [hideChatApps]). */
+    fun videos(context: Context, hideChatApps: Boolean = Prefs(context).hideChatApps): List<Entry> {
         val out = ArrayList<Entry>()
-        val cols = arrayOf(MediaStore.Video.Media._ID, MediaStore.Video.Media.DISPLAY_NAME, MediaStore.Video.Media.DURATION)
+        val cols = arrayOf(MediaStore.Video.Media._ID, MediaStore.Video.Media.DISPLAY_NAME, MediaStore.Video.Media.DURATION, folderColumn)
         context.contentResolver.query(
             MediaStore.Video.Media.EXTERNAL_CONTENT_URI, cols, null, null, MediaStore.Video.Media.DATE_ADDED + " DESC"
         )?.use { c ->
             while (c.moveToNext()) {
+                if (hideChatApps && isFromChatApp(c.getString(3))) continue
                 val uri = ContentUris.withAppendedId(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, c.getLong(0))
                 val name = c.getString(1) ?: continue
-                out += Entry(Item(uri.toString(), MediaKinds.displayName(name)), MediaKinds.formatTime(c.getLong(2)), true)
+                out += Entry(Item(uri.toString(), MediaKinds.displayName(name)), MediaKinds.formatTime(c.getLong(2)), true, uri)
             }
         }
         return out
     }
 
-    /** Every song (not ringtones or recordings), by artist then album then track. */
-    fun music(context: Context): List<Entry> {
+    /** Every song (not ringtones or recordings) in every folder of the phone, by artist then album then track. */
+    fun music(context: Context, hideChatApps: Boolean = Prefs(context).hideChatApps): List<Entry> {
         val out = ArrayList<Entry>()
         val cols = arrayOf(
             MediaStore.Audio.Media._ID, MediaStore.Audio.Media.TITLE, MediaStore.Audio.Media.ARTIST,
-            MediaStore.Audio.Media.DURATION, MediaStore.Audio.Media.DISPLAY_NAME
+            MediaStore.Audio.Media.DURATION, MediaStore.Audio.Media.DISPLAY_NAME, folderColumn
         )
         context.contentResolver.query(
             MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, cols, MediaStore.Audio.Media.IS_MUSIC + " != 0", null,
             "${MediaStore.Audio.Media.ARTIST} COLLATE NOCASE, ${MediaStore.Audio.Media.ALBUM} COLLATE NOCASE, ${MediaStore.Audio.Media.TRACK}"
         )?.use { c ->
             while (c.moveToNext()) {
+                if (hideChatApps && isFromChatApp(c.getString(5))) continue
                 val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, c.getLong(0))
                 val title = c.getString(1)?.takeIf { it.isNotBlank() } ?: MediaKinds.displayName(c.getString(4))
                 val artist = c.getString(2)?.takeIf { it.isNotBlank() && it != MediaStore.UNKNOWN_STRING }
                 val time = MediaKinds.formatTime(c.getLong(3))
-                out += Entry(Item(uri.toString(), title), if (artist != null) "$artist · $time" else time, false)
+                out += Entry(Item(uri.toString(), title), if (artist != null) "$artist · $time" else time, false, uri)
             }
         }
         return out

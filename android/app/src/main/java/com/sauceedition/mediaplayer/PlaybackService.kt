@@ -84,7 +84,10 @@ class PlaybackService : MediaBrowserServiceCompat() {
         private set
     var buffering = false
         private set
-    val isPlaying: Boolean get() = player.isPlaying
+    /** Playing, or between two items or loops of one: libVLC reports "not playing" for those moments, but the
+     * buttons, the lock screen and the foreground service treat them as playing (stopping and restarting the
+     * foreground service with the screen off is refused, and then Android may stop the app). */
+    val isPlaying: Boolean get() = player.isPlaying || (shouldPlay && !ended)
     val current: Item? get() = playlist.current
     val timeMs: Long get() = player.time.coerceAtLeast(0)
     val lengthMs: Long get() = player.length.coerceAtLeast(0)
@@ -239,6 +242,7 @@ class PlaybackService : MediaBrowserServiceCompat() {
 
     override fun onDestroy() {
         saveResume()
+        shouldPlay = false
         abandonFocus()
         unregisterNoisy()
         player.setEventListener(null)
@@ -344,17 +348,29 @@ class PlaybackService : MediaBrowserServiceCompat() {
         oldFile = openFile
         openFile = pfd
         media.setHWDecoderEnabled(true, false)
+        repeating = playlist.loop == Loop.ONE && !MediaKinds.isStreamAddress(item.uri)
+        if (repeating) media.addOption(":input-repeat=65535")
         player.media = media
         media.release()
         closeOldFile()
         hasVideo = false
         ended = false
         hiddenVideoTrack = Int.MIN_VALUE
-        pendingSeek = prefs.resumeAt(item.uri)
+        if (restartAt >= 0) {
+            pendingSeek = restartAt
+            forceSeek = true
+            restartAt = -1
+        } else {
+            pendingSeek = prefs.resumeAt(item.uri)
+            forceSeek = false
+        }
         artwork = null
         artworkFor = null
         readTags(item)
-        if (requestFocus()) player.play()
+        if (requestFocus()) {
+            player.play()
+            shouldPlay = true
+        }
         item.subtitle?.let { addSubtitle(Uri.parse(it), select = true) }
         prefs.addRecent(item)
         changed()
@@ -397,18 +413,23 @@ class PlaybackService : MediaBrowserServiceCompat() {
             startItem(playlist.current)
             return
         }
-        if (requestFocus()) player.play()
+        if (requestFocus()) {
+            player.play()
+            shouldPlay = true
+        }
     }
 
     fun pause() {
-        if (player.isPlaying) player.pause()
+        if (player.isPlaying) player.pause() else if (opening) pauseWhenStarted = true
+        shouldPlay = false
         saveResume()
     }
 
-    fun togglePlay() = if (player.isPlaying) pause() else play()
+    fun togglePlay() = if (isPlaying) pause() else play()
 
     fun stopPlaying() {
         saveResume()
+        shouldPlay = false
         player.stop()
         abandonFocus()
         ended = true
@@ -446,8 +467,56 @@ class PlaybackService : MediaBrowserServiceCompat() {
         set(v) {
             playlist.loop = v
             prefs.loop = v
+            val c = current
+            // libVLC is repeating this file by itself (loop one): to stop repeating it has to be opened again,
+            // carrying on from the same moment
+            if (repeating && v != Loop.ONE && c != null && !ended) {
+                val wasPlaying = isPlaying
+                restartAt = timeMs
+                startItem(c)
+                if (!wasPlaying) pauseWhenStarted = true
+            }
             changed()
         }
+
+    /** The file now playing was opened with libVLC's own repeat (loop one): seamless, no gap or reopening. */
+    private var repeating = false
+    /** Open the next item at this moment instead of where it was left (-1: as usual). */
+    private var restartAt = -1L
+    private var forceSeek = false
+    private var pauseWhenStarted = false
+
+    // ---- keeping the phone awake while it plays (screen off, falling asleep to a loop)
+
+    private var wakeLock: android.os.PowerManager.WakeLock? = null
+    private var wifiLock: android.net.wifi.WifiManager.WifiLock? = null
+
+    /** True from pressing play until pausing, stopping or the end: the gaps between items count as playing. */
+    private var shouldPlay = false
+        set(v) {
+            field = v
+            updateLocks()
+        }
+
+    private fun updateLocks() {
+        if (shouldPlay) {
+            val wl = wakeLock ?: (getSystemService(POWER_SERVICE) as android.os.PowerManager)
+                .newWakeLock(android.os.PowerManager.PARTIAL_WAKE_LOCK, "MediaPlayerSE:playing")
+                .apply { setReferenceCounted(false) }.also { wakeLock = it }
+            if (!wl.isHeld) wl.acquire(12 * 60 * 60 * 1000L) // a safety limit: 12 hours
+            val streaming = current?.uri?.let { MediaKinds.isStreamAddress(it) } == true
+            if (streaming) {
+                @Suppress("DEPRECATION")
+                val wf = wifiLock ?: (applicationContext.getSystemService(WIFI_SERVICE) as android.net.wifi.WifiManager)
+                    .createWifiLock(android.net.wifi.WifiManager.WIFI_MODE_FULL_HIGH_PERF, "MediaPlayerSE:streaming")
+                    .apply { setReferenceCounted(false) }.also { wifiLock = it }
+                if (!wf.isHeld) wf.acquire()
+            } else wifiLock?.let { if (it.isHeld) it.release() }
+        } else {
+            wakeLock?.let { if (it.isHeld) it.release() }
+            wifiLock?.let { if (it.isHeld) it.release() }
+        }
+    }
 
     var shuffle: Boolean
         get() = playlist.shuffle
@@ -493,7 +562,12 @@ class PlaybackService : MediaBrowserServiceCompat() {
 
     private fun onEvent(e: MediaPlayer.Event) {
         when (e.type) {
-            MediaPlayer.Event.Playing -> { buffering = false; failures = 0; changed() }
+            MediaPlayer.Event.Playing -> {
+                buffering = false
+                failures = 0
+                if (pauseWhenStarted) { pauseWhenStarted = false; player.pause(); shouldPlay = false }
+                changed()
+            }
             MediaPlayer.Event.Paused -> changed()
             MediaPlayer.Event.Stopped -> changed()
             MediaPlayer.Event.Buffering -> {
@@ -505,10 +579,11 @@ class PlaybackService : MediaBrowserServiceCompat() {
                 if (v != hasVideo && hiddenVideoTrack == Int.MIN_VALUE) { hasVideo = v; changed() }
             }
             MediaPlayer.Event.LengthChanged -> {
-                if (pendingSeek > 0 && e.lengthChanged >= MediaKinds.RESUME_MIN_LENGTH && player.isSeekable) {
+                if (pendingSeek > 0 && (forceSeek || e.lengthChanged >= MediaKinds.RESUME_MIN_LENGTH) && player.isSeekable) {
                     player.time = pendingSeek.coerceAtMost(e.lengthChanged - 1000)
                 }
                 pendingSeek = 0
+                forceSeek = false
                 // libVLC re-estimates the length of some files (MP3s) several times a second: the seek bar gets it
                 // with the time; the lock screen only when it really moved
                 if (kotlin.math.abs(e.lengthChanged - sessionLength) > 1000) updateSession()
@@ -541,6 +616,7 @@ class PlaybackService : MediaBrowserServiceCompat() {
         if (next != null) {
             startItem(next)
         } else {
+            shouldPlay = false
             ended = true
             abandonFocus()
             changed()
@@ -582,6 +658,7 @@ class PlaybackService : MediaBrowserServiceCompat() {
         if (next != null && playlist.index != before) {
             skipAfterError = Runnable { skipAfterError = null; startItem(next) }.also { main.postDelayed(it, 1500) }
         } else {
+            shouldPlay = false
             ended = true
             abandonFocus()
             changed()
@@ -678,11 +755,11 @@ class PlaybackService : MediaBrowserServiceCompat() {
     private val focusListener = AudioManager.OnAudioFocusChangeListener { change ->
         when (change) {
             AudioManager.AUDIOFOCUS_LOSS -> { resumeOnGain = false; pause(); abandonFocus() }
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> { resumeOnGain = player.isPlaying; pause() }
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> { resumeOnGain = isPlaying; pause() }
             AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> player.volume = 30
             AudioManager.AUDIOFOCUS_GAIN -> {
                 player.volume = 100
-                if (resumeOnGain) { resumeOnGain = false; player.play() }
+                if (resumeOnGain) { resumeOnGain = false; player.play(); shouldPlay = true }
             }
         }
     }
@@ -749,7 +826,7 @@ class PlaybackService : MediaBrowserServiceCompat() {
     private var sessionLength = 0L
 
     private fun updateSession() {
-        val playing = player.isPlaying
+        val playing = isPlaying
         val actions = PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_PAUSE or
             PlaybackStateCompat.ACTION_PLAY_PAUSE or PlaybackStateCompat.ACTION_STOP or
             PlaybackStateCompat.ACTION_SKIP_TO_NEXT or PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
@@ -789,7 +866,7 @@ class PlaybackService : MediaBrowserServiceCompat() {
     )
 
     private fun buildNotification(): Notification {
-        val playing = player.isPlaying
+        val playing = isPlaying
         return NotificationCompat.Builder(this, CHANNEL)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
@@ -826,7 +903,7 @@ class PlaybackService : MediaBrowserServiceCompat() {
             stopForegroundNow(true)
             return
         }
-        val playing = player.isPlaying
+        val playing = isPlaying
         // A paused video with the app open needs no notification; music, or anything left playing, gets one.
         if (!playing && !foreground) {
             if (bound || browsed) return
@@ -876,7 +953,7 @@ class PlaybackService : MediaBrowserServiceCompat() {
     }
 
     private fun stopIfIdle() {
-        if (!bound && !browsed && !player.isPlaying) {
+        if (!bound && !browsed && !isPlaying) {
             stopForegroundNow(true)
             stopSelf()
         }

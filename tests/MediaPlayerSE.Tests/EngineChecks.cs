@@ -14,9 +14,21 @@ namespace MediaPlayerSE.Tests
             TestMedia.Avi(avi, 50, 10, 320, 240);   // 5 seconds
             TestMedia.Srt(srt, (0.5, 2.0, "Hello there"), (2.5, 4.5, "Second line"));
 
+            // After an update the start-up makes the cache on a background thread (behind a "getting ready" window),
+            // before any engine is open: libVLC loads its plugin list once per process, so this comes first.
+            string plugins = Path.Combine(AppContext.BaseDirectory, "libvlc", "win-x64", "plugins");
+            Player.InitCore();
+            try { File.Delete(Path.Combine(plugins, "plugins.dat")); } catch (Exception) { }
+            bool built = false;
+            var builder = new Thread(() => built = Player.BuildPluginCache());
+            builder.Start();
+            bool finished = builder.Join(TimeSpan.FromMinutes(3));
+            Check("engine: the plugin cache can be made off the window's thread (the first start after an update)",
+                finished && built && File.Exists(Path.Combine(plugins, "plugins.dat")) && !Player.PluginCacheStale(plugins),
+                $"finished {finished}, built {built}, file {File.Exists(Path.Combine(plugins, "plugins.dat"))}");
+
             using var p = new Player(new EngineOptions { Headless = true }, a => Posted.Enqueue(a));
             Check("engine: libVLC starts", p.Lib != null && p.Lib.Version.StartsWith("3."), p.Lib?.Version);
-            string plugins = Path.Combine(AppContext.BaseDirectory, "libvlc", "win-x64", "plugins");
             Check("engine: the first start writes libVLC's plugin cache, so later starts don't open every plugin",
                 File.Exists(Path.Combine(plugins, "plugins.dat")) && !Player.PluginCacheStale(plugins));
 

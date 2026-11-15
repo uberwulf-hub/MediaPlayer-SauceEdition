@@ -146,6 +146,7 @@ class MainActivity : AppCompatActivity(), PlaybackService.Listener {
 
     override fun onDestroy() {
         background.shutdownNow()
+        adapter.close()
         super.onDestroy()
     }
 
@@ -190,7 +191,8 @@ class MainActivity : AppCompatActivity(), PlaybackService.Listener {
             MediaKinds.isStreamAddress(item.uri) -> item.uri
             else -> ""
         }
-        Entry(item, detail, !item.uri.contains("audio"))
+        val uri = Uri.parse(item.uri)
+        Entry(item, detail, !item.uri.contains("audio"), uri.takeIf { it.authority == "media" })
     }
 
     private fun show(entries: List<Entry>, emptyMessage: String, showAllow: Boolean) {
@@ -203,8 +205,9 @@ class MainActivity : AppCompatActivity(), PlaybackService.Listener {
     private fun onEntryClick(position: Int) {
         val entries = adapter.entries
         when (tab) {
-            // music plays on through the list from the song tapped; a video or a recent item plays on its own
-            Tab.MUSIC -> play(entries.map { it.item }, position)
+            // songs and videos play on through their list from the one tapped (Next goes down the list); a recent
+            // item plays on its own
+            Tab.MUSIC, Tab.VIDEOS -> play(entries.map { it.item }, position)
             else -> play(listOf(entries[position].item), 0)
         }
     }
@@ -301,6 +304,8 @@ class MainActivity : AppCompatActivity(), PlaybackService.Listener {
         val menu = PopupMenu(this, anchor)
         menu.menu.add(0, 4, 0, R.string.open_address)
         val bg = menu.menu.add(0, 1, 1, R.string.preferences).setCheckable(true).setChecked(prefs.videoInBackground)
+        val hide = menu.menu.add(0, 5, 2, R.string.hide_whatsapp).setCheckable(true).setChecked(prefs.hideChatApps)
+        menu.menu.add(0, 6, 2, R.string.play_screen_off)
         menu.menu.add(0, 2, 2, R.string.clear_recent)
         menu.menu.add(0, 3, 3, R.string.about)
         menu.setOnMenuItemClickListener {
@@ -308,6 +313,8 @@ class MainActivity : AppCompatActivity(), PlaybackService.Listener {
                 1 -> { prefs.videoInBackground = !bg.isChecked }
                 2 -> { prefs.clearRecent(); load() }
                 4 -> askAddress()
+                5 -> { prefs.hideChatApps = !hide.isChecked; load() }
+                6 -> Battery.ask(this)
                 3 -> AlertDialog.Builder(this)
                     .setTitle(R.string.app_name)
                     .setMessage(getString(R.string.about_text, BuildConfig.VERSION_NAME))

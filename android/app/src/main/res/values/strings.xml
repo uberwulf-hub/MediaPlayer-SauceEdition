@@ -38,7 +38,7 @@
     <string name="subtitles">Subtitles</string>
     <string name="sound_track">Sound track</string>
     <string name="more">More</string>
-    <string name="nothing_recent">Nothing played yet.\nTap Files, Folder or Address to start.</string>
+    <string name="nothing_recent">Nothing played yet.\nTap Files, Folder, Drive or Suno to start, or look in Videos and Music.</string>
     <string name="allow_videos">Allow Media Player to see your videos to list them here.</string>
     <string name="allow_music">Allow Media Player to see your music to list it here.</string>
     <string name="allow">Allow</string>
@@ -56,6 +56,12 @@
     <string name="no_media_in_folder">No videos or music in that folder.</string>
     <string name="remove_recent">Remove from Recent</string>
     <string name="clear_recent">Clear Recent</string>
+    <string name="hide_whatsapp">Hide WhatsApp videos and songs</string>
+    <string name="play_screen_off">Keep playing with the screen off</string>
+    <string name="battery_title">Keep playing with the screen off</string>
+    <string name="battery_text">Some phones (Samsung especially) stop apps to save battery, even while music plays. Let Media Player run without battery limits so a sleep sound or a long playlist isn\'t cut off.\n\nOn the next screen, choose Allow (or set Battery to Unrestricted).</string>
+    <string name="battery_ok">Media Player already runs without battery limits.</string>
+    <string name="continue_">Continue</string>
     <string name="preferences">Keep playing videos as sound when I leave the app</string>
     <string name="about">About</string>
     <string name="about_text">Media Player (Sauce Edition) %1$s\n\nPlays with libVLC, the playback engine of the VLC media player (LGPL-2.1-or-later), by VideoLAN and the VLC authors. Media Player (Sauce Edition) isn\'t made by or affiliated with VideoLAN; VLC is a trademark of VideoLAN.\n\nNo ads, no tracking.</string>

@@ -118,10 +118,12 @@ self-contained 64-bit Windows build (one MediaPlayerSE.exe plus the libvlc folde
 `MediaPlayerSE-windows.zip`, builds and signs `MediaPlayerSE-android.apk`, and creates the release. SauceStore picks
 it up within about 10 minutes.
 
-**Android signing key:** made by GitHub on the first release and kept in the repository's Actions cache.
-`keep-android-key.yml` touches it every 3 days so GitHub never clears it. To make it permanent, run **Actions → Back
-up the Android key** once and add the three secrets it lists. Always sign with this key: Android only installs an
-update signed with the same key.
+**Android signing key** (the same as Sahuarita Smash): GitHub made it on the first release (0.3.0). The repository is
+public since 2026-11-15 (free Actions minutes), so the key can't stay in the Actions cache, where other people's pull
+requests can reach it. Once, after adding the `BACKUP_PASSPHRASE` repository secret (a long random passphrase from a
+password manager), run **Actions → Keep the Android key in the repository**: it locks the key with that passphrase,
+commits it to `keys/` (the locked file is also the backup) and deletes the cached copy. Every release unlocks it on
+GitHub's machine only. Always sign with this key: Android only installs an update signed with the same key.
 
 **Windows:** the app is unsigned, as before.
 

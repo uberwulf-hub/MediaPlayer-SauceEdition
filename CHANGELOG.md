@@ -4,6 +4,21 @@ What changes in each version, in plain words. Newest first.
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-14
+
+### Added
+
+- Android: thumbnails of videos and song covers in the Videos, Music and Recent lists.
+- Android: WhatsApp's videos and songs are left out of the lists (⋮ > Hide WhatsApp videos and songs turns it off).
+- Android: tapping a video plays on through the Videos list, so Next goes to the next video.
+- Android: ⋮ > Keep playing with the screen off asks Android not to stop Media Player to save battery (offered once, the first time something is set to loop).
+
+### Fixed
+
+- Android: a looping sleep sound or a long playlist no longer stops with the screen off: the phone is kept awake while it plays, and "loop this one" now repeats seamlessly instead of reopening the file.
+- Windows: the seek bar, volume and equalizer sliders can be dragged from wherever they're pressed, not only by grabbing the knob.
+- Windows: the first start after an update no longer looks like nothing is happening for half a minute. A small "Getting Media Player ready" window shows straight away while the playback engine makes its list of parts (once per update), then the player opens.
+
 ## [0.4.0] - 2026-11-14
 
 ### Added
